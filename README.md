@@ -1,23 +1,63 @@
 # 🏋️ Evidence-Based Fitness Coach (RAG Chatbot)
 
-An AI-powered fitness and nutrition assistant that delivers **evidence-based recommendations** by combining **Retrieval-Augmented Generation (RAG)** with scientific research from **PubMed** and official health guidelines such as **WHO** and **ACSM**.
+An AI-powered fitness and nutrition assistant that provides **evidence-based recommendations** using **Retrieval-Augmented Generation (RAG)**.
 
-Unlike traditional AI chatbots that rely only on pretrained knowledge, this application retrieves relevant scientific evidence before generating a response, ensuring that every recommendation is grounded in reliable sources and accompanied by citations.
+Instead of relying only on an LLM's pretrained knowledge, the chatbot retrieves relevant scientific literature from **PubMed** and official health guidelines such as **WHO** and **ACSM**, ensuring every response is grounded in reliable evidence and accompanied by supporting sources.
 
 ---
 
-# 🚀 Features
+# ✨ Features
 
 - 🔍 Retrieval-Augmented Generation (RAG)
 - 📚 Scientific literature retrieval from PubMed
-- 📄 Support for WHO & ACSM guideline documents
-- 🤖 Claude-powered response generation
+- 📄 Official WHO & ACSM guideline support
+- 🤖 Dual LLM provider support
+  - Groq (default)
+  - Anthropic Claude (optional)
 - 🧠 Semantic search using Sentence Transformers
 - 💾 Persistent Chroma Vector Database
-- ⚡ FastAPI REST API backend
-- ⚛️ Modern React + Vite frontend
-- 📖 Source citations with every response
-- 💬 Interactive AI chat interface
+- 💬 Streaming AI responses
+- 📖 Evidence-based answers with citations
+- 🎯 Multiple explanation modes
+  - Beginner
+  - Coach
+  - Researcher
+- ⚡ FastAPI REST API
+- ⚛️ React + Vite frontend
+
+---
+
+# 🏗️ Architecture
+
+```text
+                User
+                  │
+                  ▼
+        React + Vite Frontend
+                  │
+             HTTP Request
+                  │
+                  ▼
+           FastAPI Backend
+                  │
+                  ▼
+        Retrieve Relevant Chunks
+                  │
+                  ▼
+             Chroma Vector DB
+                  │
+                  ▼
+      Scientific Evidence Chunks
+                  │
+                  ▼
+         Groq / Anthropic LLM
+                  │
+                  ▼
+      Citation-Grounded Response
+                  │
+                  ▼
+              React UI
+```
 
 ---
 
@@ -26,44 +66,45 @@ Unlike traditional AI chatbots that rely only on pretrained knowledge, this appl
 ```text
 fitness-rag-chatbot/
 │
-├── app/                         # FastAPI backend
+├── app/                       # FastAPI backend & RAG pipeline
 │   ├── main.py
-│   ├── retrieval.py
 │   ├── generate.py
-│   └── ...
+│   ├── retrieval.py
+│   └── __init__.py
 │
-├── ingestion/                   # Data ingestion pipeline
+├── ingestion/                 # Knowledge base creation
 │   ├── fetch_pubmed.py
 │   ├── load_guidelines.py
 │   └── build_vectorstore.py
 │
 ├── data/
 │   ├── guidelines/
-│   ├── processed/
-│   └── raw/
+│   └── processed/
+│       ├── chroma_db/
+│       └── pubmed_docs.json
 │
-├── frontend/                    # React + Vite frontend
-│   ├── src/
+├── frontend/                  # React + Vite frontend
 │   ├── public/
+│   ├── src/
 │   ├── package.json
 │   └── vite.config.js
 │
 ├── requirements.txt
 ├── .env.example
-├── README.md
-└── .gitignore
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-# 🛠 Tech Stack
+# 🛠️ Tech Stack
 
 ## Frontend
 
 - React
 - Vite
 - CSS
-- Axios
+- JavaScript
 
 ## Backend
 
@@ -72,22 +113,23 @@ fitness-rag-chatbot/
 
 ## AI & RAG
 
-- Anthropic Claude API
+- Groq API (Default Provider)
+- Anthropic Claude (Optional)
+- Meta Llama 3.3 70B Versatile
 - Sentence Transformers (`all-MiniLM-L6-v2`)
 - ChromaDB
-- LangChain
 
 ## Data Sources
 
 - PubMed
-- WHO Guidelines
+- WHO Physical Activity Guidelines
 - ACSM Position Stands
 
 ---
 
 # ⚙️ Installation
 
-## Clone the repository
+## Clone the Repository
 
 ```bash
 git clone https://github.com/naina-1212/fitness-rag-chatbot.git
@@ -96,7 +138,7 @@ cd fitness-rag-chatbot
 
 ---
 
-## Create a virtual environment
+## Create a Virtual Environment
 
 ```bash
 python -m venv venv
@@ -116,7 +158,7 @@ source venv/bin/activate
 
 ---
 
-## Install backend dependencies
+## Install Backend Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -124,7 +166,7 @@ pip install -r requirements.txt
 
 ---
 
-## Install frontend dependencies
+## Install Frontend Dependencies
 
 ```bash
 cd frontend
@@ -134,19 +176,30 @@ cd ..
 
 ---
 
-## Configure environment variables
+## Configure Environment Variables
 
 Create a `.env` file using `.env.example`
 
 ```env
-ANTHROPIC_API_KEY=YOUR_API_KEY
+# Default Provider
+GROQ_API_KEY=YOUR_GROQ_API_KEY
+LLM_PROVIDER=groq
+
+# Optional (Only required if using Anthropic)
+ANTHROPIC_API_KEY=
+
+# Optional PubMed API Key
+NCBI_API_KEY=
+
+# Chroma Database
+CHROMA_DB_PATH=./data/processed/chroma_db
 ```
 
 ---
 
 # 📚 Building the Knowledge Base
 
-### Step 1 — Fetch scientific abstracts
+## Step 1 — Fetch Scientific Literature
 
 ```bash
 python ingestion/fetch_pubmed.py
@@ -156,20 +209,20 @@ Downloads curated PubMed abstracts related to fitness and nutrition.
 
 ---
 
-### Step 2 — Load official guidelines
+## Step 2 — Load Official Guidelines
 
 Place guideline PDFs inside
 
-```
+```text
 data/guidelines/
 ```
 
-Examples:
+Examples include:
 
 - WHO Physical Activity Guidelines
 - ACSM Position Stands
 
-Then run
+Run:
 
 ```bash
 python ingestion/load_guidelines.py
@@ -177,27 +230,27 @@ python ingestion/load_guidelines.py
 
 ---
 
-### Step 3 — Build the Vector Database
+## Step 3 — Build the Vector Database
 
 ```bash
 python ingestion/build_vectorstore.py
 ```
 
-This will:
+This process:
 
-- Chunk documents
-- Generate embeddings
-- Store vectors in ChromaDB
+- Chunks documents
+- Generates embeddings
+- Stores vectors inside ChromaDB
 
-The vector database will be stored in
+The database will be created in:
 
-```
+```text
 data/processed/chroma_db/
 ```
 
 ---
 
-# ▶ Running the Backend
+# ▶️ Running the Backend
 
 ```bash
 uvicorn app.main:app --reload --port 8000
@@ -205,19 +258,19 @@ uvicorn app.main:app --reload --port 8000
 
 Backend
 
-```
+```text
 http://localhost:8000
 ```
 
-Swagger API Documentation
+Interactive API Documentation
 
-```
+```text
 http://localhost:8000/docs
 ```
 
 ---
 
-# ▶ Running the Frontend
+# ▶️ Running the Frontend
 
 ```bash
 cd frontend
@@ -226,7 +279,7 @@ npm run dev
 
 Frontend
 
-```
+```text
 http://localhost:5173
 ```
 
@@ -234,7 +287,7 @@ http://localhost:5173
 
 # 🧪 Testing
 
-## Retrieval
+## Retrieval Only
 
 ```bash
 python app/retrieval.py "How much protein should I consume after a workout?"
@@ -242,7 +295,7 @@ python app/retrieval.py "How much protein should I consume after a workout?"
 
 ---
 
-## Full RAG Generation
+## Full RAG Pipeline
 
 ```bash
 python app/generate.py "How much protein should I consume after a workout?"
@@ -250,7 +303,7 @@ python app/generate.py "How much protein should I consume after a workout?"
 
 ---
 
-# 📌 Project Status
+# 📌 Current Status
 
 ## ✅ Completed
 
@@ -258,26 +311,27 @@ python app/generate.py "How much protein should I consume after a workout?"
 - PubMed abstract ingestion
 - Guideline PDF ingestion
 - Document chunking
-- Embedding generation
+- Semantic embeddings
 - Chroma vector database
-- Semantic retrieval pipeline
-- Claude-powered answer generation
+- Retrieval pipeline
+- Retrieval-Augmented Generation
+- Dual LLM provider support (Groq & Anthropic)
+- Streaming AI responses
 - FastAPI backend
 - React frontend
-- Modern chat interface
 - Citation-grounded responses
 
 ---
 
-## 🚧 Upcoming Features
+## 🚧 Planned Features
 
 - User authentication
-- User profile management
+- User profiles
 - Personalized recommendations
 - TDEE calculator
 - Macro calculator
-- Conversation memory
 - Chat history
+- Conversation memory
 - Evaluation pipeline (Naive LLM vs RAG)
 - Docker support
 - Cloud deployment
@@ -286,16 +340,16 @@ python app/generate.py "How much protein should I consume after a workout?"
 
 # 💡 Why This Project?
 
-Most AI fitness assistants rely entirely on the language model's pretrained knowledge, which can produce inaccurate or unsupported recommendations.
+Many AI fitness assistants rely solely on the language model's internal knowledge, which can lead to inaccurate or unsupported recommendations.
 
-This project addresses that limitation by combining:
+This project improves reliability by combining:
 
 - Scientific evidence retrieval
 - Official health guidelines
 - Retrieval-Augmented Generation (RAG)
 - Citation-grounded AI responses
 
-The result is a transparent and trustworthy fitness assistant that generates recommendations supported by published research instead of relying solely on model memory.
+By retrieving relevant research before generating an answer, the chatbot produces transparent, evidence-based recommendations rather than relying solely on model memory.
 
 ---
 
@@ -303,12 +357,22 @@ The result is a transparent and trustworthy fitness assistant that generates rec
 
 - Multi-turn conversational memory
 - Personalized fitness coaching
-- Wearable device integration
 - Nutrition tracking
 - Workout planning
-- Voice assistant support
+- Wearable device integration
+- Voice assistant
 - Multi-language support
-- Performance evaluation dashboard
+- Evaluation dashboard
+
+---
+
+# 📸 Demo
+
+Coming Soon
+
+- UI screenshots
+- Demo GIF
+- Live deployment
 
 ---
 
@@ -317,9 +381,9 @@ The result is a transparent and trustworthy fitness assistant that generates rec
 Contributions are welcome!
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a new branch
 3. Commit your changes
-4. Push the branch
+4. Push your branch
 5. Open a Pull Request
 
 ---
@@ -336,5 +400,4 @@ This project is licensed under the MIT License.
 
 Computer Science Student • AI & Full Stack Developer
 
-GitHub:
-https://github.com/naina-1212
+GitHub: **https://github.com/naina-1212**
