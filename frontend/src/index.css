@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-bg: #f5f6f3;
+  --color-surface: #ffffff;
+  --color-ink: #14231c;
+  --color-muted: #5b6b63;
+  --color-line: #e4e2da;
+  --color-accent: #ff5a36;
+  --color-accent-soft: #ffe8e0;
+  --color-forest: #16a34a;
+  --color-forest-deep: #0f5132;
+}
+
+/* Dark theme: overrides the same CSS variables, so every component that
+   uses bg-bg / text-ink / border-line / etc. switches automatically --
+   no need to sprinkle dark: variants everywhere. */
+.dark {
+  --color-bg: #0e1512;
+  --color-surface: #16201c;
+  --color-ink: #edefe9;
+  --color-muted: #8ca398;
+  --color-line: #263129;
+  --color-accent: #ff6b47;
+  --color-accent-soft: #34211a;
+  --color-forest: #34d399;
+  --color-forest-deep: #6ee7b7;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* --- Signature element: pulse line (heartbeat / evidence "vital signs") --- */
+@keyframes pulse-travel {
+  0% {
+    stroke-dashoffset: 240;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pulse-line path {
+  stroke-dasharray: 240;
+  stroke-dashoffset: 240;
+  animation: pulse-travel 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-line path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Lightweight markdown styling for assistant answers (no typography plugin) */
+.prose-fitness p {
+  margin: 0 0 0.6em 0;
+}
+.prose-fitness p:last-child {
+  margin-bottom: 0;
+}
+.prose-fitness ul,
+.prose-fitness ol {
+  margin: 0.4em 0 0.6em 1.1em;
+}
+.prose-fitness li {
+  margin-bottom: 0.25em;
+}
+.prose-fitness strong {
+  font-weight: 600;
+}
+.prose-fitness code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
