@@ -1,80 +1,340 @@
-# Evidence-Based Fitness Coach (RAG Chatbot)
+# 🏋️ Evidence-Based Fitness Coach (RAG Chatbot)
 
-A chatbot that answers fitness/nutrition questions grounded in real
-research (PubMed abstracts) and official guidelines (WHO, ACSM), with
-every claim citing its source — instead of relying on an LLM's generic
-(and sometimes wrong) training knowledge.
+An AI-powered fitness and nutrition assistant that delivers **evidence-based recommendations** by combining **Retrieval-Augmented Generation (RAG)** with scientific research from **PubMed** and official health guidelines such as **WHO** and **ACSM**.
 
-## Status: Day 3 of 7 — retrieval + generation
+Unlike traditional AI chatbots that rely only on pretrained knowledge, this application retrieves relevant scientific evidence before generating a response, ensuring that every recommendation is grounded in reliable sources and accompanied by citations.
 
-- [x] Project scaffold
-- [x] PubMed abstract fetcher (`ingestion/fetch_pubmed.py`)
-- [x] Guideline PDF loader (`ingestion/load_guidelines.py`)
-- [x] Chunking + local embedding + Chroma vector store (`ingestion/build_vectorstore.py`)
-- [x] Retrieval (`app/retrieval.py`) + Claude-generated, citation-grounded answers (`app/generate.py`)
-- [ ] Agentic personalization layer (TDEE/macro calc + user profile)
-- [ ] FastAPI backend
-- [ ] Streamlit frontend
-- [ ] Eval set: naive LLM vs RAG pipeline
-- [ ] Deploy + demo GIF
+---
 
-## Test retrieval + generation directly (before the web layer exists)
+# 🚀 Features
 
-```bash
-# Retrieval only (no API key needed, just checks Chroma is working)
-python app/retrieval.py how much protein do I need after a workout
+- 🔍 Retrieval-Augmented Generation (RAG)
+- 📚 Scientific literature retrieval from PubMed
+- 📄 Support for WHO & ACSM guideline documents
+- 🤖 Claude-powered response generation
+- 🧠 Semantic search using Sentence Transformers
+- 💾 Persistent Chroma Vector Database
+- ⚡ FastAPI REST API backend
+- ⚛️ Modern React + Vite frontend
+- 📖 Source citations with every response
+- 💬 Interactive AI chat interface
 
-# Full RAG answer (needs ANTHROPIC_API_KEY in .env)
-python app/generate.py how much protein do I need after a workout
+---
+
+# 📂 Project Structure
+
+```text
+fitness-rag-chatbot/
+│
+├── app/                         # FastAPI backend
+│   ├── main.py
+│   ├── retrieval.py
+│   ├── generate.py
+│   └── ...
+│
+├── ingestion/                   # Data ingestion pipeline
+│   ├── fetch_pubmed.py
+│   ├── load_guidelines.py
+│   └── build_vectorstore.py
+│
+├── data/
+│   ├── guidelines/
+│   ├── processed/
+│   └── raw/
+│
+├── frontend/                    # React + Vite frontend
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── requirements.txt
+├── .env.example
+├── README.md
+└── .gitignore
 ```
 
-## Stack
+---
 
-- **Generation**: Claude API (Anthropic)
-- **Embeddings**: `sentence-transformers` (local, `all-MiniLM-L6-v2` — free, no extra API key)
-- **Vector store**: Chroma (persistent, local)
-- **Backend**: FastAPI
-- **Frontend**: Streamlit
+# 🛠 Tech Stack
 
-## Setup
+## Frontend
+
+- React
+- Vite
+- CSS
+- Axios
+
+## Backend
+
+- FastAPI
+- Python
+
+## AI & RAG
+
+- Anthropic Claude API
+- Sentence Transformers (`all-MiniLM-L6-v2`)
+- ChromaDB
+- LangChain
+
+## Data Sources
+
+- PubMed
+- WHO Guidelines
+- ACSM Position Stands
+
+---
+
+# ⚙️ Installation
+
+## Clone the repository
+
+```bash
+git clone https://github.com/naina-1212/fitness-rag-chatbot.git
+cd fitness-rag-chatbot
+```
+
+---
+
+## Create a virtual environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env       # then add your ANTHROPIC_API_KEY
 ```
 
-## Build the knowledge base
+### Windows
 
 ```bash
-# 1. Fetch PubMed abstracts for the curated fitness subtopics
+venv\Scripts\activate
+```
+
+### Linux / macOS
+
+```bash
+source venv/bin/activate
+```
+
+---
+
+## Install backend dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Install frontend dependencies
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+---
+
+## Configure environment variables
+
+Create a `.env` file using `.env.example`
+
+```env
+ANTHROPIC_API_KEY=YOUR_API_KEY
+```
+
+---
+
+# 📚 Building the Knowledge Base
+
+### Step 1 — Fetch scientific abstracts
+
+```bash
 python ingestion/fetch_pubmed.py
+```
 
-# 2. (Optional but recommended) Drop guideline PDFs into data/guidelines/
-#    e.g. WHO physical activity guidelines, ACSM position stands
+Downloads curated PubMed abstracts related to fitness and nutrition.
+
+---
+
+### Step 2 — Load official guidelines
+
+Place guideline PDFs inside
+
+```
+data/guidelines/
+```
+
+Examples:
+
+- WHO Physical Activity Guidelines
+- ACSM Position Stands
+
+Then run
+
+```bash
 python ingestion/load_guidelines.py
+```
 
-# 3. Chunk everything, embed it, and store it in Chroma
+---
+
+### Step 3 — Build the Vector Database
+
+```bash
 python ingestion/build_vectorstore.py
 ```
 
-After this, you'll have a persistent Chroma collection at
-`data/processed/chroma_db/` with your fitness evidence base ready for
-retrieval.
+This will:
 
-## Why this project
+- Chunk documents
+- Generate embeddings
+- Store vectors in ChromaDB
 
-Most "chat with your PDF" RAG demos are generic. Fitness/nutrition
-advice is a domain where ungrounded LLM answers are a real risk (lots
-of bro-science baked into training data), so citation-grounded
-retrieval is solving an actual problem, not a toy one. The eval step
-(naive LLM vs. RAG, on accuracy/citation-correctness) is what
-separates this from a wrapper project.
+The vector database will be stored in
 
-## Notes on the PubMed fetcher
+```
+data/processed/chroma_db/
+```
 
-`ingestion/fetch_pubmed.py` uses NCBI's public E-utilities API — no key
-required for light use (a few requests/second). If you hit rate limits,
-get a free NCBI API key and add it as a query param to raise the limit
-to 10 req/sec.
+---
+
+# ▶ Running the Backend
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Backend
+
+```
+http://localhost:8000
+```
+
+Swagger API Documentation
+
+```
+http://localhost:8000/docs
+```
+
+---
+
+# ▶ Running the Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend
+
+```
+http://localhost:5173
+```
+
+---
+
+# 🧪 Testing
+
+## Retrieval
+
+```bash
+python app/retrieval.py "How much protein should I consume after a workout?"
+```
+
+---
+
+## Full RAG Generation
+
+```bash
+python app/generate.py "How much protein should I consume after a workout?"
+```
+
+---
+
+# 📌 Project Status
+
+## ✅ Completed
+
+- Project architecture
+- PubMed abstract ingestion
+- Guideline PDF ingestion
+- Document chunking
+- Embedding generation
+- Chroma vector database
+- Semantic retrieval pipeline
+- Claude-powered answer generation
+- FastAPI backend
+- React frontend
+- Modern chat interface
+- Citation-grounded responses
+
+---
+
+## 🚧 Upcoming Features
+
+- User authentication
+- User profile management
+- Personalized recommendations
+- TDEE calculator
+- Macro calculator
+- Conversation memory
+- Chat history
+- Evaluation pipeline (Naive LLM vs RAG)
+- Docker support
+- Cloud deployment
+
+---
+
+# 💡 Why This Project?
+
+Most AI fitness assistants rely entirely on the language model's pretrained knowledge, which can produce inaccurate or unsupported recommendations.
+
+This project addresses that limitation by combining:
+
+- Scientific evidence retrieval
+- Official health guidelines
+- Retrieval-Augmented Generation (RAG)
+- Citation-grounded AI responses
+
+The result is a transparent and trustworthy fitness assistant that generates recommendations supported by published research instead of relying solely on model memory.
+
+---
+
+# 🔮 Future Improvements
+
+- Multi-turn conversational memory
+- Personalized fitness coaching
+- Wearable device integration
+- Nutrition tracking
+- Workout planning
+- Voice assistant support
+- Multi-language support
+- Performance evaluation dashboard
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push the branch
+5. Open a Pull Request
+
+---
+
+# 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+# 👩‍💻 Author
+
+**Naina Awan**
+
+Computer Science Student • AI & Full Stack Developer
+
+GitHub:
+https://github.com/naina-1212
