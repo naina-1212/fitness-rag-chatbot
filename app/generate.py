@@ -93,6 +93,47 @@ def get_system_prompt(mode: str = "coach") -> str:
     return SYSTEM_PROMPT + MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["coach"])
 
 
+AGENT_SYSTEM_PROMPT = """You are a friendly, highly intelligent personal fitness coach and agent. \
+You have access to real-time search results to help answer the user's question. \
+Answer in warm, encouraging, plain language a beginner could understand: short sentences, practical takeaways.
+
+Ground your answer in the search results provided. Be honest about what you find. Unlike the local research database, \
+you can integrate general fitness/nutrition knowledge, but prioritize facts from the web search results.
+
+Rules:
+1. Keep answers conversational, friendly, and structured. Break down steps or tips into simple bullet points if helpful.
+2. Skip inline [1][2]-style citations. Write clean, like a normal chat response.
+3. At the very end, add a short line like: "Search results based on: <2-3 search topics>" to show where you retrieved your live web information.
+"""
+
+AGENT_MODE_INSTRUCTIONS = {
+    "beginner": (
+        "\n\nVoice: Beginner mode. Focus on fundamental principles, avoid technical jargon, and explain concepts simply."
+    ),
+    "coach": (
+        "\n\nVoice: Coach mode. Direct, action-oriented advice, like a trainer helping someone execute their goals."
+    ),
+    "researcher": (
+        "\n\nVoice: Researcher mode. Explain findings from the web searches using proper scientific reasoning or terminology, summarizing details cleanly."
+    ),
+}
+
+
+def get_agent_system_prompt(mode: str = "coach") -> str:
+    return AGENT_SYSTEM_PROMPT + AGENT_MODE_INSTRUCTIONS.get(mode, AGENT_MODE_INSTRUCTIONS["coach"])
+
+
+def build_agent_user_message(query: str, search_results: list[dict]) -> str:
+    context_lines = []
+    for i, r in enumerate(search_results, start=1):
+        context_lines.append(f"[{i}] Title: {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}")
+    context = "\n\n".join(context_lines)
+    return f"""Question: {query}
+
+Web Search Context:
+{context}"""
+
+
 def _format_context(chunks: list[dict]) -> str:
     lines = []
     for i, c in enumerate(chunks, start=1):
@@ -222,7 +263,7 @@ def stream_rag_answer(query: str, top_k: int = 6, mode: str = "coach"):
 def generate_rag(query: str, top_k: int = 6) -> dict:
     """Full RAG pipeline: retrieve relevant chunks, then generate a
     citation-grounded answer. Returns the answer text plus the raw
-    chunks used, so the frontend can show sources separately if desired."""
+    chunks used, so the frontend can show sourcesa separately if desired."""
     chunks = retrieve(query, top_k=top_k)
     context = _format_context(chunks)
 

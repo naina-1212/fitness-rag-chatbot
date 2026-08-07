@@ -15,8 +15,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.generate import retrieve_chunks, build_user_message, _stream_llm, get_system_prompt, LLM_PROVIDER
+from app.generate import retrieve_chunks, build_user_message, _stream_llm, get_system_prompt, build_agent_user_message, get_agent_system_prompt, LLM_PROVIDER
 from app.retrieval import get_corpus_stats
+from app.search import search_ddg
 
 app = FastAPI(title="Fitness Coach API")
 
@@ -27,7 +28,7 @@ FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "*")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN != "*" else ["*"],
-   allow_credentials=FRONTEND_ORIGIN != "*",
+    allow_credentials=FRONTEND_ORIGIN != "*",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -37,6 +38,7 @@ class ChatRequest(BaseModel):
     query: str
     top_k: int = 6
     mode: str = "coach"  # "beginner" | "coach" | "researcher"
+    model_type: str = "rag"  # "rag" | "agent"
 
 
 @app.get("/api/health")
@@ -58,25 +60,38 @@ def chat(req: ChatRequest):
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
-    # Retrieve once up front so we can send sources as a header-like first
-    # chunk, then stream the answer text after it, without retrieving twice.
-    # Protocol: first line is "__SOURCES__<json>", rest is streamed answer text.
-    chunks = retrieve_chunks(req.query, top_k=req.top_k)
-    user_message = build_user_message(req.query, chunks)
-    system_prompt = get_system_prompt(req.mode)
+    if req.model_type == "agent":
+        search_results = search_ddg(req.query, max_results=5)
+        user_message = build_agent_user_message(req.query, search_results)
+        system_prompt = get_agent_system_prompt(req.mode)
+        
+        sources_payload = [
+            {
+                "title": r["title"],
+                "source_type": r["source_type"],
+                "year": r["year"],
+                "url": r["url"],
+            }
+            for r in search_results
+        ]
+    else:
+        chunks = retrieve_chunks(req.query, top_k=req.top_k)
+        user_message = build_user_message(req.query, chunks)
+        system_prompt = get_system_prompt(req.mode)
+        
+        sources_payload = [
+            {
+                "title": c["metadata"]["title"],
+                "source_type": c["metadata"]["source_type"],
+                "year": c["metadata"]["year"],
+                "url": c["metadata"].get("url", ""),
+            }
+            for c in chunks
+        ]
 
     def event_stream():
         import json
         try:
-            sources_payload = [
-                {
-                    "title": c["metadata"]["title"],
-                    "source_type": c["metadata"]["source_type"],
-                    "year": c["metadata"]["year"],
-                    "url": c["metadata"].get("url", ""),
-                }
-                for c in chunks
-            ]
             # de-dupe by title while preserving order
             seen = set()
             deduped = []

@@ -14,14 +14,15 @@ export async function fetchStats() {
  * @param {string} query
  * @param {number} topK
  * @param {string} mode - "beginner" | "coach" | "researcher"
+ * @param {string} modelType - "rag" | "agent"
  * @param {(delta: string) => void} onDelta - called with each new text chunk
  * @param {(sources: Array) => void} onSources - called once with parsed sources
  */
-export async function streamChat(query, topK, mode, onDelta, onSources) {
+export async function streamChat(query, topK, mode, modelType, onDelta, onSources) {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, top_k: topK, mode }),
+    body: JSON.stringify({ query, top_k: topK, mode, model_type: modelType }),
   });
 
   if (!res.ok || !res.body) {
