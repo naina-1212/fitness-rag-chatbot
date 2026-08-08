@@ -180,6 +180,18 @@ export default function App() {
     }
   };
 
+  const handleClearChat = () => {
+    if (confirm("Are you sure you want to clear all messages in this conversation?")) {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeChatId
+            ? { ...s, title: "New Chat", messages: [] }
+            : s,
+        ),
+      );
+    }
+  };
+
   const handleRenameSession = (id, newTitle) => {
     setSessions((prev) =>
       prev.map((s) => (s.id === id ? { ...s, title: newTitle } : s)),
@@ -338,6 +350,8 @@ export default function App() {
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
         onRenameSession={handleRenameSession}
+        onClearChat={handleClearChat}
+        isChatEmpty={messages.length === 0}
         sidebarOpen={sidebarOpen}
         onSidebarClose={() => setSidebarOpen(false)}
       />

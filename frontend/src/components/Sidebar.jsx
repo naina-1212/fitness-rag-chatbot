@@ -30,6 +30,8 @@ export default function Sidebar({
   onNewChat,
   onDeleteSession,
   onRenameSession,
+  onClearChat,
+  isChatEmpty,
 
   // Mobile props
   sidebarOpen,
@@ -69,7 +71,7 @@ export default function Sidebar({
                   fill="none"
                 />
               </svg>
-              <span className="font-display font-extrabold text-lg tracking-tight bg-gradient-to-r from-ink to-muted bg-clip-text text-transparent">
+              <span className="font-display font-extrabold text-lg tracking-tight bg-linear-to-r from-ink to-muted bg-clip-text text-transparent">
                 PulseFit Coach
               </span>
             </div>
@@ -104,8 +106,8 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* New Chat Button */}
-        <div className="px-6 pt-5 pb-2">
+        {/* Action Buttons */}
+        <div className="px-6 pt-5 pb-2 flex flex-col gap-2">
           <button
             onClick={() => {
               onNewChat();
@@ -114,6 +116,22 @@ export default function Sidebar({
             className="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
           >
             <span>＋</span> New Chat
+          </button>
+
+          <button
+            onClick={() => {
+              if (onClearChat) onClearChat();
+              if (onSidebarClose) onSidebarClose();
+            }}
+            disabled={isChatEmpty}
+            className={`w-full font-semibold py-2.5 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all duration-200 ${
+              isChatEmpty
+                ? "bg-bg/10 border-line/40 text-muted/30 cursor-not-allowed opacity-40"
+                : "bg-surface border-line text-muted hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0 hover:shadow-xs"
+            }`}
+            title="Clear current chat messages"
+          >
+            <span>🧹</span> Clear Chat
           </button>
         </div>
 

@@ -10,6 +10,7 @@ Exposes:
 """
 
 import os
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -62,6 +63,48 @@ def stats():
         raise HTTPException(status_code=503, detail=f"Knowledge base not ready: {e}")
 
 
+def is_conversational(query: str) -> bool:
+    if not query:
+        return False
+    # Strip all non-alphanumeric characters except spaces
+    q = re.sub(r'[^\w\s]', '', query).strip().lower()
+    
+    # Common conversational phrases (without punctuation)
+    conversational_phrases = {
+        "hi", "hello", "hey", "hola", "yo", "greetings", "hi there", "hello there", "hey there",
+        "how are you", "how are you doing", "how goes it", "hows it going", "how is it going", "hows life",
+        "whats up", "what is up", "sup", "hows your day", "how is your day",
+        "who are you", "what are you", "what is your name", "whats your name",
+        "thank you", "thanks", "thank you so much", "thanks a lot", "thanks helper",
+        "good morning", "good afternoon", "good evening",
+        "goodbye", "bye", "see you", "see ya", "talk to you later",
+        "ok", "okay", "cool", "great", "awesome", "perfect",
+        "hello how are you", "hello how are you doing", "hey how are you", "hey how are you doing",
+        "hi how are you", "hi how are you doing", "hello there how are you", "hello there how are you doing",
+        "hey there how are you", "hey there how are you doing", "how are you today", "how are you doing today"
+    }
+    
+    if q in conversational_phrases:
+        return True
+        
+    # Check if the query is just composed entirely of greeting/particle words
+    words = q.split()
+    if not words:
+        return False
+        
+    greetings_and_particles = {
+        "hi", "hello", "hey", "yo", "greetings", "good", "morning", "afternoon", "evening", "howdy",
+        "how", "who", "are", "you", "doing", "up", "whats", "what", "is", "your", "name", "thanks", "thank",
+        "bye", "goodbye", "there", "going", "it", "to", "day", "life", "ok", "okay", "cool", "great", "awesome", "perfect",
+        "fine", "well", "im", "i", "am", "doing", "very", "much", "and", "self", "today"
+    }
+    
+    if all(w in greetings_and_particles for w in words):
+        return True
+            
+    return False
+
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     # Determine current query
@@ -77,38 +120,39 @@ def chat(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
     sources_payload = []
+    is_conv = is_conversational(query)
     
     if req.model_type == "agent":
-        if req.search_web:
+        if req.search_web and not is_conv:
             search_results = search_ddg(query, max_results=5)
             grounded_content = build_agent_user_message(query, search_results)
-            sources_payload = [
-                {
-                    "title": r["title"],
-                    "source_type": r["source_type"],
-                    "year": r["year"],
-                    "url": r["url"],
-                }
-                for r in search_results
-            ]
+            # Web agent does not need to return sources to the frontend
+            sources_payload = []
         else:
             grounded_content = query
             sources_payload = []
         
         system_prompt = get_agent_system_prompt(req.mode)
     else:
-        chunks = retrieve_chunks(query, top_k=req.top_k)
-        grounded_content = build_user_message(query, chunks)
-        sources_payload = [
-            {
-                "title": c["metadata"]["title"],
-                "source_type": c["metadata"]["source_type"],
-                "year": c["metadata"]["year"],
-                "url": c["metadata"].get("url", ""),
-            }
-            for c in chunks
-        ]
+        if not is_conv:
+            chunks = retrieve_chunks(query, top_k=req.top_k)
+            grounded_content = build_user_message(query, chunks)
+            sources_payload = [
+                {
+                    "title": c["metadata"]["title"],
+                    "source_type": c["metadata"]["source_type"],
+                    "year": c["metadata"]["year"],
+                    "url": c["metadata"].get("url", ""),
+                }
+                for c in chunks
+            ]
+        else:
+            grounded_content = query
+            sources_payload = []
         system_prompt = get_system_prompt(req.mode)
+
+    if is_conv:
+        system_prompt += "\n\nNote: The user's message is a casual greeting, small talk, or simple acknowledgement. Keep your response extremely brief, warm, and natural (1-2 sentences max) and do not try to reference any research or search results."
 
     # Build conversation payload for the LLM
     if req.messages:
