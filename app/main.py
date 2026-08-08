@@ -34,11 +34,18 @@ app.add_middleware(
 )
 
 
+class Message(BaseModel):
+    role: str
+    content: str
+
+
 class ChatRequest(BaseModel):
-    query: str
+    query: str = None
+    messages: list[Message] = None
     top_k: int = 6
     mode: str = "coach"  # "beginner" | "coach" | "researcher"
     model_type: str = "rag"  # "rag" | "agent"
+    search_web: bool = True
 
 
 @app.get("/api/health")
@@ -57,28 +64,41 @@ def stats():
 
 @app.post("/api/chat")
 def chat(req: ChatRequest):
-    if not req.query.strip():
+    # Determine current query
+    query = req.query
+    if not query and req.messages:
+        # Find the last user message to use as current search query
+        for msg in reversed(req.messages):
+            if msg.role == "user":
+                query = msg.content
+                break
+
+    if not query or not query.strip():
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
+    sources_payload = []
+    
     if req.model_type == "agent":
-        search_results = search_ddg(req.query, max_results=5)
-        user_message = build_agent_user_message(req.query, search_results)
+        if req.search_web:
+            search_results = search_ddg(query, max_results=5)
+            grounded_content = build_agent_user_message(query, search_results)
+            sources_payload = [
+                {
+                    "title": r["title"],
+                    "source_type": r["source_type"],
+                    "year": r["year"],
+                    "url": r["url"],
+                }
+                for r in search_results
+            ]
+        else:
+            grounded_content = query
+            sources_payload = []
+        
         system_prompt = get_agent_system_prompt(req.mode)
-        
-        sources_payload = [
-            {
-                "title": r["title"],
-                "source_type": r["source_type"],
-                "year": r["year"],
-                "url": r["url"],
-            }
-            for r in search_results
-        ]
     else:
-        chunks = retrieve_chunks(req.query, top_k=req.top_k)
-        user_message = build_user_message(req.query, chunks)
-        system_prompt = get_system_prompt(req.mode)
-        
+        chunks = retrieve_chunks(query, top_k=req.top_k)
+        grounded_content = build_user_message(query, chunks)
         sources_payload = [
             {
                 "title": c["metadata"]["title"],
@@ -88,6 +108,18 @@ def chat(req: ChatRequest):
             }
             for c in chunks
         ]
+        system_prompt = get_system_prompt(req.mode)
+
+    # Build conversation payload for the LLM
+    if req.messages:
+        llm_messages = [{"role": m.role, "content": m.content} for m in req.messages]
+        # Inject the grounded content (with context) into the last user message
+        for i in range(len(llm_messages) - 1, -1, -1):
+            if llm_messages[i]["role"] == "user":
+                llm_messages[i]["content"] = grounded_content
+                break
+    else:
+        llm_messages = [{"role": "user", "content": grounded_content}]
 
     def event_stream():
         import json
@@ -102,7 +134,7 @@ def chat(req: ChatRequest):
 
             yield f"__SOURCES__{json.dumps(deduped)}\n"
 
-            for delta in _stream_llm(system_prompt, user_message):
+            for delta in _stream_llm(system_prompt, llm_messages):
                 yield delta
         except Exception as e:
             import traceback

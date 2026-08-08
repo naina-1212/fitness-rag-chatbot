@@ -14,161 +14,267 @@ const MODES = [
   { id: "researcher", label: "Researcher", hint: "More technical depth" },
 ];
 
-const EXAMPLES = [
-  "How much protein do I need to build muscle?",
-  "What's the best training volume for hypertrophy?",
-  "Does sleep actually affect muscle recovery?",
-  "What heart rate zone is best for cardio fitness?",
-  "Is intermittent fasting effective for fat loss?",
-];
-
 export default function Sidebar({
   modelType,
   onModelTypeChange,
   mode,
   onModeChange,
-  onExampleClick,
   stats,
-  onClear,
   theme,
   onThemeToggle,
+
+  // Session props
+  sessions = [],
+  activeChatId,
+  onSelectSession,
+  onNewChat,
+  onDeleteSession,
+  onRenameSession,
+
+  // Mobile props
+  sidebarOpen,
+  onSidebarClose,
 }) {
   return (
-    <aside className="w-80 shrink-0 border-r border-line bg-surface flex flex-col h-full shadow-lg">
-      {/* Header */}
-      <div className="px-6 py-6 border-b border-line flex items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 240 24"
-              className="shrink-0"
-            >
-              <path
-                d="M0 12 H70 L84 2 L98 22 L112 6 L124 12 H240"
-                stroke="var(--color-accent)"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
-            <span className="font-display font-bold text-xl tracking-tight bg-gradient-to-r from-ink to-muted bg-clip-text text-transparent">
-              PulseFit Coach
-            </span>
-          </div>
-          <p className="text-sm text-muted mt-1.5 leading-snug">
-            Evidence-based training assistant.
-          </p>
-        </div>
-        <button
-          onClick={onThemeToggle}
-          aria-label="Toggle theme"
-          title={
-            theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-          }
-          className="shrink-0 w-9 h-9 rounded-xl border border-line flex items-center justify-center text-muted hover:text-ink hover:border-ink/30 hover:bg-bg transition-all"
-        >
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
-      </div>
-
-      {/* Engine selector */}
-      <div className="px-6 py-5 border-b border-line">
-        <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted mb-3.5">
-          Knowledge engine
-        </h3>
-        <div className="flex flex-col gap-2">
-          {MODEL_TYPES.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => onModelTypeChange(m.id)}
-              className={`text-left px-4 py-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                modelType === m.id
-                  ? "border-accent bg-accent-soft text-ink shadow-sm scale-[1.01]"
-                  : "border-line bg-bg text-muted hover:border-ink/20 hover:text-ink"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{m.icon}</span>
-                <div className="text-base font-bold">{m.label}</div>
-              </div>
-              <div className="text-sm opacity-85 mt-0.5 ml-7">{m.hint}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Explanation mode */}
-      <div className="px-6 py-5 border-b border-line">
-        <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted mb-3.5">
-          Voice & style
-        </h3>
-        <div className="flex flex-col gap-2">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => onModeChange(m.id)}
-              className={`text-left px-4 py-2.5 rounded-xl border transition-all duration-200 cursor-pointer ${
-                mode === m.id
-                  ? "border-accent bg-accent-soft text-ink scale-[1.01]"
-                  : "border-line bg-bg text-muted hover:border-ink/20 hover:text-ink"
-              }`}
-            >
-              <div className="text-base font-semibold">{m.label}</div>
-              <div className="text-sm opacity-85 mt-0.5">{m.hint}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Try asking */}
-      <div className="px-6 py-5 border-b border-line flex-1 overflow-y-auto">
-        <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-muted mb-3.5">
-          Try asking
-        </h3>
-        <div className="flex flex-col gap-2">
-          {EXAMPLES.map((q) => (
-            <button
-              key={q}
-              onClick={() => onExampleClick(q)}
-              className="text-left text-base text-ink/80 px-4 py-2.5 rounded-xl hover:bg-bg border border-transparent hover:border-line transition-all cursor-pointer font-medium hover:pl-5 duration-200"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats */}
-      {stats && modelType === "rag" && (
-        <div className="px-6 py-4 border-t border-line grid grid-cols-2 gap-3 bg-bg/50">
-          <StatBlock value={stats.unique_sources} label="sources" />
-          <StatBlock value={stats.total_chunks} label="passages" />
-        </div>
+    <>
+      {/* Mobile Sidebar Overlay Backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/45 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
+          onClick={onSidebarClose}
+        />
       )}
 
-      {/* Clear conversation */}
-      <div className="px-6 py-4 border-t border-line">
-        <button
-          onClick={onClear}
-          className="w-full text-base text-muted hover:text-ink hover:bg-bg border border-line rounded-xl py-2.5 transition-all font-semibold cursor-pointer text-center"
-        >
-          Clear conversation
-        </button>
-      </div>
-    </aside>
+      <aside
+        className={`fixed inset-y-0 left-0 w-80 bg-surface border-r border-line flex flex-col h-full shadow-xl z-50 transform transition-transform duration-300 md:relative md:translate-x-0 shrink-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Header */}
+        <div className="px-6 py-5.5 border-b border-line flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 240 24"
+                className="shrink-0"
+              >
+                <path
+                  d="M0 12 H70 L84 2 L98 22 L112 6 L124 12 H240"
+                  stroke="var(--color-accent)"
+                  strokeWidth="4.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+              <span className="font-display font-extrabold text-lg tracking-tight bg-gradient-to-r from-ink to-muted bg-clip-text text-transparent">
+                PulseFit Coach
+              </span>
+            </div>
+            <p className="text-xs text-muted mt-1 leading-snug font-medium">
+              Evidence-based training assistant.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* Theme toggle */}
+            <button
+              onClick={onThemeToggle}
+              aria-label="Toggle theme"
+              title={
+                theme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              className="shrink-0 w-8 h-8 rounded-lg border border-line flex items-center justify-center text-sm text-muted hover:text-ink hover:border-ink/30 hover:bg-bg transition-all cursor-pointer"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+
+            {/* Mobile close button */}
+            <button
+              onClick={onSidebarClose}
+              className="md:hidden w-8 h-8 rounded-lg border border-line flex items-center justify-center text-muted hover:text-ink cursor-pointer"
+              title="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="px-6 pt-5 pb-2">
+          <button
+            onClick={() => {
+              onNewChat();
+              if (onSidebarClose) onSidebarClose();
+            }}
+            className="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
+          >
+            <span>＋</span> New Chat
+          </button>
+        </div>
+
+        {/* Chat History Section */}
+        <div className="flex-1 overflow-y-auto px-6 py-3 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-3">
+              <span className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">
+                Chat History
+              </span>
+              <span className="text-2xs bg-bg border border-line px-1.5 py-0.5 rounded-full text-muted font-bold">
+                {sessions.length}
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1.5 scrollbar-thin">
+              {sessions.length === 0 ? (
+                <div className="text-center py-10 text-xs text-muted/50 font-medium">
+                  No conversations yet
+                </div>
+              ) : (
+                sessions.map((s) => {
+                  const isActive = s.id === activeChatId;
+                  return (
+                    <div
+                      key={s.id}
+                      className={`group relative flex items-center rounded-xl border transition-all duration-150 ${
+                        isActive
+                          ? "border-accent/40 bg-accent-soft/30 text-ink shadow-sm"
+                          : "border-transparent hover:bg-bg/60 text-muted hover:text-ink"
+                      }`}
+                    >
+                      <button
+                        onClick={() => {
+                          onSelectSession(s.id);
+                          if (onSidebarClose) onSidebarClose();
+                        }}
+                        className="flex-1 text-left px-3.5 py-2.5 text-sm font-semibold truncate pr-16 cursor-pointer"
+                      >
+                        💬 {s.title || "Untitled Chat"}
+                      </button>
+
+                      {/* Hover Actions */}
+                      <div
+                        className={`absolute right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg px-1 ${
+                          isActive ? "bg-bg" : "bg-surface"
+                        }`}
+                      >
+                        <button
+                          onClick={() => {
+                            const newTitle = prompt(
+                              "Rename chat:",
+                              s.title || "",
+                            );
+                            if (newTitle !== null && newTitle.trim()) {
+                              onRenameSession(s.id, newTitle.trim());
+                            }
+                          }}
+                          className="w-6.5 h-6.5 rounded-md hover:bg-line/60 flex items-center justify-center text-xs text-muted hover:text-ink cursor-pointer"
+                          title="Rename chat"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm("Delete this conversation?")) {
+                              onDeleteSession(s.id);
+                            }
+                          }}
+                          className="w-6.5 h-6.5 rounded-md hover:bg-accent/10 flex items-center justify-center text-xs text-muted hover:text-accent cursor-pointer"
+                          title="Delete chat"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Collapsible Configuration Settings */}
+        <details className="border-t border-line py-3.5 group bg-bg/25">
+          <summary className="px-6 py-1.5 cursor-pointer flex items-center justify-between text-2xs font-mono font-extrabold uppercase tracking-wider text-muted hover:text-ink list-none select-none">
+            <span className="flex items-center gap-1.5">⚙️ Configuration</span>
+            <span className="group-open:rotate-180 transition-transform text-xs duration-200">
+              ▾
+            </span>
+          </summary>
+
+          <div className="px-6 pt-4 pb-1 flex flex-col gap-4.5 animate-slide-up">
+            {/* Engine selector */}
+            <div>
+              <h4 className="font-bold text-2xs text-muted uppercase tracking-wider mb-2">
+                Knowledge Engine
+              </h4>
+              <div className="flex flex-col gap-1.5">
+                {MODEL_TYPES.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => onModelTypeChange(m.id)}
+                    className={`text-left px-3.5 py-2.5 rounded-xl border transition-all duration-150 text-xs cursor-pointer ${
+                      modelType === m.id
+                        ? "border-accent bg-accent-soft text-ink font-bold shadow-sm"
+                        : "border-line bg-surface text-muted hover:border-ink/20 hover:text-ink"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{m.icon}</span>
+                      <div>{m.label}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Explanation mode */}
+            <div>
+              <h4 className="font-bold text-2xs text-muted uppercase tracking-wider mb-2">
+                Voice & Style
+              </h4>
+              <div className="flex flex-col gap-1.5">
+                {MODES.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => onModeChange(m.id)}
+                    className={`text-left px-3.5 py-2.5 rounded-xl border transition-all duration-150 text-xs cursor-pointer ${
+                      mode === m.id
+                        ? "border-accent bg-accent-soft text-ink font-bold shadow-sm"
+                        : "border-line bg-surface text-muted hover:border-ink/20 hover:text-ink"
+                    }`}
+                  >
+                    <div>{m.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </details>
+
+        {/* Stats */}
+        {stats && modelType === "rag" && (
+          <div className="px-6 py-4.5 border-t border-line grid grid-cols-2 gap-3.5 bg-bg/50">
+            <StatBlock value={stats.unique_sources} label="sources" />
+            <StatBlock value={stats.total_chunks} label="passages" />
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
 
 function StatBlock({ value, label }) {
   return (
-    <div className="text-center bg-surface p-2 rounded-xl border border-line">
-      <div className="font-mono text-xl font-bold text-forest-deep">
+    <div className="text-center bg-surface p-2.5 rounded-xl border border-line shadow-2xs">
+      <div className="font-mono text-base font-extrabold text-forest-deep">
         {value ?? "—"}
       </div>
-      <div className="text-xs uppercase tracking-wide text-muted font-bold mt-0.5">
+      <div className="font-mono text-[9px] uppercase tracking-wide text-muted font-extrabold mt-0.5">
         {label}
       </div>
     </div>

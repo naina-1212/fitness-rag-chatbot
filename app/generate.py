@@ -93,17 +93,17 @@ def get_system_prompt(mode: str = "coach") -> str:
     return SYSTEM_PROMPT + MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["coach"])
 
 
-AGENT_SYSTEM_PROMPT = """You are a friendly, highly intelligent personal fitness coach and agent. \
-You have access to real-time search results to help answer the user's question. \
-Answer in warm, encouraging, plain language a beginner could understand: short sentences, practical takeaways.
+AGENT_SYSTEM_PROMPT = """You are a friendly, highly intelligent personal AI assistant and wellness coach. \
+You help the user with any daily conversation, general questions, or fitness and nutrition advice. \
+Behave like ChatGPT: be conversational, friendly, precise, and helpful. Use warm, encouraging, and clear language.
 
-Ground your answer in the search results provided. Be honest about what you find. Unlike the local research database, \
-you can integrate general fitness/nutrition knowledge, but prioritize facts from the web search results.
+If web search context is provided below, ground your answer in it to give accurate, up-to-date details. \
+If no search context is provided, answer using your general knowledge in a helpful and friendly way.
 
 Rules:
-1. Keep answers conversational, friendly, and structured. Break down steps or tips into simple bullet points if helpful.
-2. Skip inline [1][2]-style citations. Write clean, like a normal chat response.
-3. At the very end, add a short line like: "Search results based on: <2-3 search topics>" to show where you retrieved your live web information.
+1. Keep answers conversational, user-friendly, and structured. Use paragraphs, lists, or bold text naturally to make formatting elegant.
+2. Answer precisely and directly. Do not reference academic studies formally or use citation markers like [1][2] in the text.
+3. If you used web search results, at the very end of your response, add a short, clean line like: "Search results based on: <2-3 search topics>" to let the user know. If no search results were used, do NOT add this line.
 """
 
 AGENT_MODE_INSTRUCTIONS = {
@@ -144,15 +144,20 @@ def _format_context(chunks: list[dict]) -> str:
     return "\n\n".join(lines)
 
 
-def _call_llm(system: str, user_message: str) -> str:
-    """Routes to whichever provider is configured."""
+def _call_llm(system: str, messages: list[dict] | str) -> str:
+    """Routes to whichever provider is configured, supporting conversation history."""
+    if isinstance(messages, str):
+        messages_list = [{"role": "user", "content": messages}]
+    else:
+        messages_list = messages
+
     if LLM_PROVIDER == "anthropic":
         client = _get_anthropic_client()
         response = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=1000,
             system=system,
-            messages=[{"role": "user", "content": user_message}],
+            messages=messages_list,
         )
         return "".join(block.text for block in response.content if block.type == "text")
 
@@ -168,7 +173,7 @@ def _call_llm(system: str, user_message: str) -> str:
                 "model": GROQ_MODEL,
                 "messages": [
                     {"role": "system", "content": system},
-                    {"role": "user", "content": user_message},
+                    *messages_list,
                 ],
                 "temperature": 0.3,
             },
@@ -181,10 +186,14 @@ def _call_llm(system: str, user_message: str) -> str:
         raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")
 
 
-def _stream_llm(system: str, user_message: str):
+def _stream_llm(system: str, messages: list[dict] | str):
     """Generator version of _call_llm -- yields text chunks as they arrive,
-    for use in a live-updating chat UI. Falls back to yielding the full
-    response in one piece for providers where streaming isn't wired up."""
+    supporting conversation history."""
+    if isinstance(messages, str):
+        messages_list = [{"role": "user", "content": messages}]
+    else:
+        messages_list = messages
+
     if LLM_PROVIDER == "groq":
         api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
@@ -197,7 +206,7 @@ def _stream_llm(system: str, user_message: str):
                 "model": GROQ_MODEL,
                 "messages": [
                     {"role": "system", "content": system},
-                    {"role": "user", "content": user_message},
+                    *messages_list,
                 ],
                 "temperature": 0.3,
                 "stream": True,
@@ -227,7 +236,7 @@ def _stream_llm(system: str, user_message: str):
             model=ANTHROPIC_MODEL,
             max_tokens=1000,
             system=system,
-            messages=[{"role": "user", "content": user_message}],
+            messages=messages_list,
         ) as stream:
             for text in stream.text_stream:
                 yield text

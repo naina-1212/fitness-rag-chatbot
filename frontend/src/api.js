@@ -18,11 +18,34 @@ export async function fetchStats() {
  * @param {(delta: string) => void} onDelta - called with each new text chunk
  * @param {(sources: Array) => void} onSources - called once with parsed sources
  */
-export async function streamChat(query, topK, mode, modelType, onDelta, onSources) {
+export async function streamChat(
+  messages,
+  topK,
+  mode,
+  modelType,
+  searchWeb,
+  onDelta,
+  onSources,
+) {
+  const bodyPayload = {
+    top_k: topK,
+    mode,
+    model_type: modelType,
+    search_web: searchWeb,
+  };
+  if (Array.isArray(messages)) {
+    bodyPayload.messages = messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+  } else {
+    bodyPayload.query = messages;
+  }
+
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, top_k: topK, mode, model_type: modelType }),
+    body: JSON.stringify(bodyPayload),
   });
 
   if (!res.ok || !res.body) {
