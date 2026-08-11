@@ -166,7 +166,7 @@ export default function Sidebar({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <h2 className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">
-                Answers from
+                Agent Type
               </h2>
               <span className="text-[10px] text-muted/70 font-medium">
                 {activeModel?.hint}
