@@ -9,7 +9,7 @@ Instead of relying only on an LLM's pretrained knowledge, the chatbot retrieves 
 # ✨ Features
 
 - 🔍 Retrieval-Augmented Generation (RAG)
-- 📚 Scientific literature retrieval from PubMed
+- 📚 Scientific literature retrieval from PubMed plus official health guidance
 - 📄 Official WHO & ACSM guideline support
 - 🤖 Dual LLM provider support
   - Groq (default)
@@ -18,6 +18,7 @@ Instead of relying only on an LLM's pretrained knowledge, the chatbot retrieves 
 - 💾 Persistent Chroma Vector Database
 - 💬 Streaming AI responses
 - 📖 Evidence-based answers with citations
+- 📎 Private document upload and question answering (PDF, DOCX, TXT, Markdown, and CSV; up to 10 MB)
 - 🎯 Multiple explanation modes
   - Beginner
   - Coach
@@ -70,6 +71,7 @@ fitness-rag-chatbot/
 │   ├── main.py
 │   ├── generate.py
 │   ├── retrieval.py
+│   ├── user_documents.py       # private upload extraction and retrieval
 │   └── __init__.py
 │
 ├── ingestion/                 # Knowledge base creation
@@ -267,6 +269,17 @@ Interactive API Documentation
 ```text
 http://localhost:8000/docs
 ```
+
+## Asking questions about your own documents
+
+After signing in, use **Your documents → Upload** in the sidebar, then leave the
+document selected for the current chat. Ask a direct question such as “What is
+my daily protein target in this plan?” The assistant retrieves the most relevant
+private excerpts and uses them in its answer. Uploads are scoped to the signed-in
+account and can be removed from the same sidebar.
+
+Supported formats are PDF, DOCX, TXT, Markdown, and CSV (maximum 10 MB). Scanned
+PDFs without embedded text are not supported yet.
 
 ---
 

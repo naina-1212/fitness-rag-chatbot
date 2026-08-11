@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatMessage from "./components/ChatMessage";
 import PulseLoader from "./components/PulseLoader";
-import { fetchStats, streamChat } from "./api";
+import { deleteConversation, deleteDocument, fetchConversations, fetchDocuments, fetchStats, saveConversation, streamChat, uploadDocument } from "./api";
+import { useAuth } from "./auth/AuthContext";
 
 const SUGGESTIONS = [
   {
@@ -36,40 +37,59 @@ const SUGGESTIONS = [
 ];
 
 export default function App() {
-  const [sessions, setSessions] = useState(() => {
-    try {
-      const saved = localStorage.getItem("pulsefit_sessions");
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    const defaultSession = {
-      id: "session_" + Date.now(),
-      title: "New Chat",
-      messages: [],
-      mode: "coach",
-      modelType: "rag",
-      searchWeb: true,
-      timestamp: Date.now(),
-    };
-    return [defaultSession];
-  });
-
-  const [activeChatId, setActiveChatId] = useState(() => {
-    const savedId = localStorage.getItem("pulsefit_active_chat_id");
-    return savedId || "";
-  });
+  const { logout, user } = useAuth();
+  const [sessions, setSessions] = useState([]);
+  const [activeChatId, setActiveChatId] = useState("");
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [documentError, setDocumentError] = useState("");
+  const saveTimerRef = useRef(null);
 
   const [input, setInput] = useState("");
   const [stats, setStats] = useState(null);
   const [statsError, setStatsError] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem("pulsefit_sidebar_collapsed") === "true",
+  );
   const scrollRef = useRef(null);
 
   const [theme, setTheme] = useState(
     () => localStorage.getItem("theme") || "dark",
   );
+
+  const createNewSession = () => ({
+    id: "session_" + Date.now(), title: "New Chat", messages: [], mode: "coach",
+    modelType: "rag", searchWeb: true, documentIds: [], timestamp: Date.now(),
+  });
+
+  // Load history from the server after authentication. The API scopes it to this user.
+  useEffect(() => {
+    let cancelled = false;
+    setHistoryLoaded(false);
+    fetchConversations()
+      .then((saved) => {
+        if (cancelled) return;
+        const nextSessions = saved.length ? saved : [createNewSession()];
+        setSessions(nextSessions);
+        setActiveChatId(nextSessions[0].id);
+        setHistoryLoaded(true);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Unable to load conversation history", error);
+        const newSession = createNewSession();
+        setSessions([newSession]);
+        setActiveChatId(newSession.id);
+        setHistoryLoaded(true);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchDocuments().then(setDocuments).catch(() => setDocumentError("Your documents could not be loaded."));
+  }, [user?.id]);
 
   // Sync activeChatId fallback if not found in sessions
   useEffect(() => {
@@ -84,20 +104,24 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    localStorage.setItem("pulsefit_sidebar_collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
     fetchStats()
       .then(setStats)
       .catch(() => setStatsError(true));
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("pulsefit_sessions", JSON.stringify(sessions));
-  }, [sessions]);
-
-  useEffect(() => {
-    if (activeChatId) {
-      localStorage.setItem("pulsefit_active_chat_id", activeChatId);
-    }
-  }, [activeChatId]);
+    if (!historyLoaded) return;
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      Promise.all(sessions.map((session) => saveConversation(session)))
+        .catch((error) => console.error("Unable to save conversation history", error));
+    }, 500);
+    return () => clearTimeout(saveTimerRef.current);
+  }, [sessions, historyLoaded]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -144,32 +168,51 @@ export default function App() {
     );
   };
 
+  const toggleDocument = (id) => {
+    setSessions((prev) => prev.map((session) => session.id === activeChatId ? {
+      ...session,
+      documentIds: (session.documentIds || []).includes(id)
+        ? session.documentIds.filter((documentId) => documentId !== id)
+        : [...(session.documentIds || []), id],
+    } : session));
+  };
+
+  const handleUploadDocument = async (file) => {
+    setDocumentError("");
+    try {
+      const uploaded = await uploadDocument(file);
+      setDocuments((prev) => [uploaded, ...prev]);
+      setSessions((prev) => prev.map((session) => session.id === activeChatId ? {
+        ...session, documentIds: [...(session.documentIds || []), uploaded.id],
+      } : session));
+    } catch (error) {
+      setDocumentError(error.message);
+    }
+  };
+
+  const handleDeleteDocument = async (id) => {
+    try {
+      await deleteDocument(id);
+      setDocuments((prev) => prev.filter((document) => document.id !== id));
+      setSessions((prev) => prev.map((session) => ({
+        ...session, documentIds: (session.documentIds || []).filter((documentId) => documentId !== id),
+      })));
+    } catch (error) {
+      setDocumentError(error.message);
+    }
+  };
+
   const handleNewChat = () => {
-    const newSession = {
-      id: "session_" + Date.now(),
-      title: "New Chat",
-      messages: [],
-      mode: "coach",
-      modelType: "rag",
-      searchWeb: true,
-      timestamp: Date.now(),
-    };
+    const newSession = createNewSession();
     setSessions((prev) => [newSession, ...prev]);
     setActiveChatId(newSession.id);
   };
 
   const handleDeleteSession = (id) => {
     const remaining = sessions.filter((s) => s.id !== id);
+    deleteConversation(id).catch((error) => console.error("Unable to delete conversation", error));
     if (remaining.length === 0) {
-      const defaultSession = {
-        id: "session_" + Date.now(),
-        title: "New Chat",
-        messages: [],
-        mode: "coach",
-        modelType: "rag",
-        searchWeb: true,
-        timestamp: Date.now(),
-      };
+      const defaultSession = createNewSession();
       setSessions([defaultSession]);
       setActiveChatId(defaultSession.id);
     } else {
@@ -223,6 +266,7 @@ export default function App() {
     const currentModelType = forceModelType || modelType;
     const currentSearchWeb =
       forceSearchWeb !== undefined ? forceSearchWeb : searchWeb;
+    const currentDocumentIds = activeSession.documentIds || [];
 
     const userMsg = { role: "user", content: activeQuery };
     const assistantMsg = {
@@ -263,6 +307,7 @@ export default function App() {
         currentMode,
         currentModelType,
         currentSearchWeb,
+        currentDocumentIds,
         (delta) => {
           setSessions((prev) =>
             prev.map((s) => {
@@ -337,6 +382,7 @@ export default function App() {
       <div className="mesh-bg animate-fade-in" />
 
       <Sidebar
+        onLogout={logout}
         modelType={modelType}
         onModelTypeChange={setModelType}
         mode={mode}
@@ -354,6 +400,14 @@ export default function App() {
         isChatEmpty={messages.length === 0}
         sidebarOpen={sidebarOpen}
         onSidebarClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        documents={documents}
+        activeDocumentIds={activeSession.documentIds || []}
+        onUploadDocument={handleUploadDocument}
+        onDeleteDocument={handleDeleteDocument}
+        onToggleDocument={toggleDocument}
+        documentError={documentError}
       />
 
       <main className="flex-1 flex flex-col min-w-0 relative h-full z-10">

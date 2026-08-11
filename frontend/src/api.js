@@ -1,9 +1,66 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const AUTH_SESSION_KEY = "pulsefit_auth_session";
+
+function getAuthHeader() {
+  try {
+    const token = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || "null")?.token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 export async function fetchStats() {
   const res = await fetch(`${API_BASE}/api/stats`);
   if (!res.ok) throw new Error(`Stats request failed: ${res.status}`);
   return res.json();
+}
+
+async function conversationRequest(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...getAuthHeader(), ...options.headers },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`Conversation request failed: ${res.status}`);
+  return res.status === 204 ? null : res.json();
+}
+
+export function fetchConversations() {
+  return conversationRequest("/api/conversations");
+}
+
+export function saveConversation(conversation) {
+  return conversationRequest(`/api/conversations/${encodeURIComponent(conversation.id)}`, {
+    method: "PUT",
+    body: JSON.stringify(conversation),
+  });
+}
+
+export function deleteConversation(id) {
+  return conversationRequest(`/api/conversations/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export function fetchDocuments() {
+  return conversationRequest("/api/documents");
+}
+
+export async function uploadDocument(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch(`${API_BASE}/api/documents`, {
+    method: "POST",
+    headers: getAuthHeader(),
+    body,
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || "Document upload failed.");
+  }
+  return res.json();
+}
+
+export function deleteDocument(id) {
+  return conversationRequest(`/api/documents/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 /**
@@ -24,6 +81,7 @@ export async function streamChat(
   mode,
   modelType,
   searchWeb,
+  documentIds,
   onDelta,
   onSources,
 ) {
@@ -32,6 +90,7 @@ export async function streamChat(
     mode,
     model_type: modelType,
     search_web: searchWeb,
+    document_ids: documentIds || [],
   };
   if (Array.isArray(messages)) {
     bodyPayload.messages = messages.map((m) => ({
@@ -44,7 +103,7 @@ export async function streamChat(
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
     body: JSON.stringify(bodyPayload),
   });
 

@@ -29,7 +29,8 @@ export default function ChatMessage({ role, content, sources, streaming }) {
               : "bg-surface border border-line rounded-2xl rounded-tl-none prose-fitness text-ink"
           }`}
         >
-          <div className="text-base leading-relaxed break-words">
+          <div className="text-base leading-relaxed">
+            {" "}
             {isUser ? (
               content
             ) : (

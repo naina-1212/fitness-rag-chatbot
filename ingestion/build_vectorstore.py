@@ -1,6 +1,6 @@
 """
-Loads the PubMed + guideline JSON docs produced by fetch_pubmed.py and
-load_guidelines.py, chunks them, embeds them locally with
+Loads PubMed, guideline, and curated official-guidance JSON documents,
+chunks them, embeds them locally with
 sentence-transformers, and stores them in a persistent Chroma collection.
 
 Usage:
@@ -25,7 +25,7 @@ CHUNK_OVERLAP = 150    # characters of overlap between chunks
 
 def load_all_docs() -> list[dict]:
     docs = []
-    for fname in ["pubmed_docs.json", "guideline_docs.json"]:
+    for fname in ["pubmed_docs.json", "guideline_docs.json", "trusted_guidance_docs.json"]:
         path = DATA_DIR / fname
         if path.exists():
             with open(path) as f:
@@ -77,6 +77,7 @@ def main():
                     "text": chunk,
                     "metadata": {
                         "source_type": doc["source_type"],
+                        "publisher": doc.get("publisher", "PubMed" if doc["source_type"] == "pubmed" else ""),
                         "title": doc["title"],
                         "year": doc.get("year", "n.d."),
                         "topic": doc.get("topic", ""),

@@ -1,5 +1,18 @@
 # React + Vite
 
+## Authentication integration
+
+The interface includes protected `/chat`, `/login`, `/signup`, and `/forgot-password` routes. The accompanying FastAPI app now provides local sign-up, sign-in, sign-out, expiring sessions, and server-side chat protection with a SQLite user store. No credentials are embedded in the client.
+
+By default the frontend calls the API host configured by `VITE_API_BASE_URL`. Set `VITE_AUTH_API_BASE_URL` only when authentication lives on a different host. The local FastAPI backend implements these JSON endpoints; adapt `src/auth/authApi.js` if you use a managed auth provider instead:
+
+- `POST /api/auth/login` with `{ email, password }`
+- `POST /api/auth/signup` with `{ name, email, password }`
+- `POST /api/auth/forgot-password` with `{ email }`
+- `POST /api/auth/logout`
+
+Login and sign-up return a `user` object and `access_token`. Returned sessions are persisted locally, and the chat client sends the bearer token with each chat request. The local account database is created at `data/processed/pulsefit_auth.db` (ignored by Git). Password-reset email delivery needs an email provider before it can send messages; the endpoint currently returns the same neutral success response for every address.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:

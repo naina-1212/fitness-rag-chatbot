@@ -5,7 +5,7 @@ export default function SourceChips({ sources }) {
     <details className="mt-3 group text-left">
       <summary className="cursor-pointer text-sm font-mono uppercase tracking-wide text-muted hover:text-ink transition-colors list-none flex items-center gap-1.5">
         <span className="inline-block w-2 h-2 rounded-full bg-forest" />
-        Based on {sources.length} source{sources.length !== 1 ? "s" : ""}
+        Trusted sources ({sources.length})
         <span className="group-open:rotate-180 transition-transform text-xs">▾</span>
       </summary>
       <div className="mt-2 flex flex-col gap-1.5">
@@ -13,10 +13,14 @@ export default function SourceChips({ sources }) {
           const content = (
             <>
               <span className="font-mono text-muted shrink-0 text-sm">{s.year}</span>
-              <span className="text-ink/80 text-left flex-1 hover:underline transition-all text-sm font-medium">{s.title}</span>
+              <span className="text-ink/80 text-left flex-1 hover:underline transition-all text-sm font-medium">
+                {s.publisher && <span className="block text-xs text-muted mb-0.5">{s.publisher}</span>}
+                {s.title}
+              </span>
               <span className="ml-auto shrink-0 font-mono text-xs uppercase text-forest-deep bg-forest/10 px-1.5 py-0.5 rounded">
                 {s.source_type}
               </span>
+              {s.url && <span className="text-accent text-xs shrink-0" aria-label="Open source">↗</span>}
             </>
           );
 
