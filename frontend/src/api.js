@@ -3,7 +3,9 @@ const AUTH_SESSION_KEY = "pulsefit_auth_session";
 
 function getAuthHeader() {
   try {
-    const token = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || "null")?.token;
+    const token = JSON.parse(
+      localStorage.getItem(AUTH_SESSION_KEY) || "null",
+    )?.token;
     return token ? { Authorization: `Bearer ${token}` } : {};
   } catch {
     return {};
@@ -18,7 +20,11 @@ export async function fetchStats() {
 
 async function conversationRequest(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...getAuthHeader(), ...options.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+      ...options.headers,
+    },
     ...options,
   });
   if (!res.ok) throw new Error(`Conversation request failed: ${res.status}`);
@@ -30,14 +36,19 @@ export function fetchConversations() {
 }
 
 export function saveConversation(conversation) {
-  return conversationRequest(`/api/conversations/${encodeURIComponent(conversation.id)}`, {
-    method: "PUT",
-    body: JSON.stringify(conversation),
-  });
+  return conversationRequest(
+    `/api/conversations/${encodeURIComponent(conversation.id)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(conversation),
+    },
+  );
 }
 
 export function deleteConversation(id) {
-  return conversationRequest(`/api/conversations/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return conversationRequest(`/api/conversations/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export function fetchDocuments() {
@@ -60,7 +71,9 @@ export async function uploadDocument(file) {
 }
 
 export function deleteDocument(id) {
-  return conversationRequest(`/api/documents/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return conversationRequest(`/api/documents/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 /**

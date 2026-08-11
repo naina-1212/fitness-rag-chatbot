@@ -45,9 +45,10 @@ export default function Sidebar({
   onDeleteDocument,
   onToggleDocument,
   documentError,
-  documentNotice,
-  isUploadingDocument = false,
 }) {
+  const activeModel = MODEL_TYPES.find((m) => m.id === modelType);
+  const activeMode = MODES.find((m) => m.id === mode);
+
   return (
     <>
       {/* Mobile Sidebar Overlay Backdrop */}
@@ -64,7 +65,9 @@ export default function Sidebar({
         }`}
       >
         {/* Header */}
-        <div className={`px-6 py-5.5 border-b border-line flex items-center justify-between gap-3 ${isCollapsed ? "md:px-3" : ""}`}>
+        <div
+          className={`px-6 py-5.5 border-b border-line flex items-center justify-between gap-3 ${isCollapsed ? "md:px-3" : ""}`}
+        >
           <div className={isCollapsed ? "md:hidden" : ""}>
             <div className="flex items-center gap-2">
               <svg
@@ -126,7 +129,9 @@ export default function Sidebar({
         </div>
 
         {/* Action Buttons */}
-        <div className={`px-6 pt-5 pb-2 flex flex-col gap-2 ${isCollapsed ? "md:px-3" : ""}`}>
+        <div
+          className={`px-6 pt-5 pb-2 flex flex-col gap-2 ${isCollapsed ? "md:px-3" : ""}`}
+        >
           <button
             onClick={() => {
               onNewChat();
@@ -154,26 +159,115 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Private document context */}
-        <section className={`px-6 py-3 border-b border-line ${isCollapsed ? "md:hidden" : ""}`}>
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div>
-              <h2 className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">Your documents</h2>
-              <p className="text-[10px] text-muted mt-0.5">Private to your account</p>
+        {/* Knowledge Engine + Voice & Style — always visible, not buried in a collapsible */}
+        <div
+          className={`px-6 pt-1 pb-4 flex flex-col gap-3.5 ${isCollapsed ? "md:hidden" : ""}`}
+        >
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <h2 className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">
+                Answers from
+              </h2>
+              <span className="text-[10px] text-muted/70 font-medium">
+                {activeModel?.hint}
+              </span>
+            </div>
+            <div
+              className="grid grid-cols-2 gap-1.5"
+              role="radiogroup"
+              aria-label="Knowledge engine"
+            >
+              {MODEL_TYPES.map((m) => (
+                <button
+                  key={m.id}
+                  role="radio"
+                  aria-checked={modelType === m.id}
+                  onClick={() => onModelTypeChange(m.id)}
+                  className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all duration-150 cursor-pointer ${
+                    modelType === m.id
+                      ? "border-accent bg-accent-soft text-ink shadow-sm"
+                      : "border-line bg-surface text-muted hover:border-ink/20 hover:text-ink"
+                  }`}
+                >
+                  <span>{m.icon}</span>
+                  {m.label}
+                </button>
+              ))}
             </div>
           </div>
-          <label className={`group mb-3 flex w-full items-center gap-3 rounded-xl border border-accent/35 bg-accent-soft/55 px-3.5 py-3 text-left shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-accent/35 focus-within:ring-offset-2 focus-within:ring-offset-surface ${isUploadingDocument ? "cursor-wait opacity-75" : "cursor-pointer hover:-translate-y-0.5 hover:border-accent hover:bg-accent hover:shadow-md"}`}>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-lg text-white shadow-sm transition-transform duration-200 group-hover:scale-105" aria-hidden="true">↑</span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs font-extrabold text-ink transition-colors group-hover:text-white">{isUploadingDocument ? "Uploading document…" : "Upload a document"}</span>
-              <span className="mt-0.5 block text-[10px] font-medium text-muted transition-colors group-hover:text-white/85">{isUploadingDocument ? "Preparing it for this chat" : "PDF, DOCX, TXT, MD, or CSV · up to 10 MB"}</span>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <h2 className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">
+                Voice
+              </h2>
+              <span className="text-[10px] text-muted/70 font-medium">
+                {activeMode?.hint}
+              </span>
+            </div>
+            <div
+              className="flex gap-1.5"
+              role="radiogroup"
+              aria-label="Voice and style"
+            >
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  role="radio"
+                  aria-checked={mode === m.id}
+                  onClick={() => onModeChange(m.id)}
+                  className={`flex-1 px-2 py-2 rounded-xl border text-xs font-bold transition-all duration-150 cursor-pointer ${
+                    mode === m.id
+                      ? "border-accent bg-accent-soft text-ink shadow-sm"
+                      : "border-line bg-surface text-muted hover:border-ink/20 hover:text-ink"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Private document context */}
+        <section
+          className={`px-6 py-3 border-t border-b border-line ${isCollapsed ? "md:hidden" : ""}`}
+        >
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div>
+              <h2 className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">
+                Your documents
+              </h2>
+              <p className="text-[10px] text-muted mt-0.5">
+                Private to your account
+              </p>
+            </div>
+          </div>
+          <label className="group mb-3 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-accent/35 bg-accent-soft/55 px-3.5 py-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-accent hover:bg-accent hover:shadow-md focus-within:ring-2 focus-within:ring-accent/35 focus-within:ring-offset-2 focus-within:ring-offset-surface">
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-lg text-white shadow-sm transition-transform duration-200 group-hover:scale-105"
+              aria-hidden="true"
+            >
+              ↑
             </span>
-            <span className="text-xs font-bold text-accent transition-colors group-hover:text-white" aria-hidden="true">{isUploadingDocument ? "Please wait" : "Browse"}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-extrabold text-ink transition-colors group-hover:text-white">
+                Upload a document
+              </span>
+              <span className="mt-0.5 block text-[10px] font-medium text-muted transition-colors group-hover:text-white/85">
+                PDF, DOCX, TXT, MD, or CSV · up to 10 MB
+              </span>
+            </span>
+            <span
+              className="text-xs font-bold text-accent transition-colors group-hover:text-white"
+              aria-hidden="true"
+            >
+              Browse
+            </span>
             <input
               type="file"
               accept=".pdf,.docx,.txt,.md,.csv"
               className="sr-only"
-              disabled={isUploadingDocument}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) onUploadDocument?.(file);
@@ -181,38 +275,62 @@ export default function Sidebar({
               }}
             />
           </label>
-          {documentError && <p role="alert" className="text-xs text-rose-500 mb-2">{documentError}</p>}
-          {documentNotice && <p role="status" className="mb-2 flex items-center gap-1.5 rounded-lg bg-forest/10 px-2.5 py-2 text-xs font-semibold text-forest-deep"><span aria-hidden="true">✓</span>{documentNotice}</p>}
+          {documentError && (
+            <p role="alert" className="text-xs text-rose-500 mb-2">
+              {documentError}
+            </p>
+          )}
           <div className="max-h-28 overflow-y-auto pr-1 scrollbar-thin flex flex-col gap-1">
             {documents.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-line bg-bg/40 px-3 py-2 text-xs leading-relaxed text-muted/75">Uploaded documents can be selected to ground this chat in your own material.</p>
-            ) : documents.map((document) => {
-              const selected = activeDocumentIds.includes(document.id);
-              const extension = document.filename?.split(".").pop()?.toUpperCase() || "DOC";
-              return <div key={document.id} className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 border transition-colors ${selected ? "bg-accent-soft/40 border-accent/40 shadow-xs" : "border-transparent hover:bg-bg"}`}>
-                <input
-                  type="checkbox"
-                  checked={selected}
-                  onChange={() => onToggleDocument?.(document.id)}
-                  aria-label={`Use ${document.filename} in this chat`}
-                  className="accent-accent cursor-pointer"
-                />
-                <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-bg px-1 font-mono text-[8px] font-extrabold text-muted" aria-hidden="true">{extension}</span>
-                <span className="flex-1 min-w-0 truncate text-xs font-semibold text-ink" title={document.filename}>{document.filename}</span>
-                <button
-                  type="button"
-                  onClick={() => onDeleteDocument?.(document.id)}
-                  title={`Delete ${document.filename}`}
-                  className="text-muted hover:text-rose-500 text-xs cursor-pointer"
-                >✕</button>
-              </div>;
-            })}
+              <p className="rounded-lg border border-dashed border-line bg-bg/40 px-3 py-2 text-xs leading-relaxed text-muted/75">
+                Uploaded documents can be selected to ground this chat in your
+                own material.
+              </p>
+            ) : (
+              documents.map((document) => {
+                const selected = activeDocumentIds.includes(document.id);
+                return (
+                  <div
+                    key={document.id}
+                    className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 border ${selected ? "bg-accent-soft/40 border-accent/40" : "border-transparent hover:bg-bg"}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => onToggleDocument?.(document.id)}
+                      aria-label={`Use ${document.filename} in this chat`}
+                      className="accent-accent cursor-pointer"
+                    />
+                    <span
+                      className="flex-1 min-w-0 truncate text-xs font-semibold text-ink"
+                      title={document.filename}
+                    >
+                      {document.filename}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteDocument?.(document.id)}
+                      title={`Delete ${document.filename}`}
+                      className="text-muted hover:text-rose-500 text-xs cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
-          {documents.length > 0 && <p className="text-[10px] text-muted mt-2">{activeDocumentIds.length ? `${activeDocumentIds.length} document${activeDocumentIds.length === 1 ? "" : "s"} selected for this chat.` : "Select documents to use in this chat."}</p>}
+          {documents.length > 0 && (
+            <p className="text-[10px] text-muted mt-2">
+              Select documents to use in this chat.
+            </p>
+          )}
         </section>
 
         {/* Chat History Section */}
-        <div className={`flex-1 overflow-y-auto px-6 py-3 flex flex-col min-h-0 ${isCollapsed ? "md:hidden" : ""}`}>
+        <div
+          className={`flex-1 overflow-y-auto px-6 py-3 flex flex-col min-h-0 ${isCollapsed ? "md:hidden" : ""}`}
+        >
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between mb-3">
               <span className="font-mono text-2xs font-extrabold uppercase tracking-wider text-muted/80">
@@ -291,68 +409,14 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Collapsible Configuration Settings */}
-        <details className={`border-t border-line py-3.5 group bg-bg/25 ${isCollapsed ? "md:hidden" : ""}`}>
-          <summary className="px-6 py-1.5 cursor-pointer flex items-center justify-between text-2xs font-mono font-extrabold uppercase tracking-wider text-muted hover:text-ink list-none select-none">
-            <span className="flex items-center gap-1.5">⚙️ Configuration</span>
-            <span className="group-open:rotate-180 transition-transform text-xs duration-200">
-              ▾
-            </span>
-          </summary>
-
-          <div className="px-6 pt-4 pb-1 flex flex-col gap-4.5 animate-slide-up">
-            {/* Engine selector */}
-            <div>
-              <h4 className="font-bold text-2xs text-muted uppercase tracking-wider mb-2">
-                Knowledge Engine
-              </h4>
-              <div className="flex flex-col gap-1.5">
-                {MODEL_TYPES.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => onModelTypeChange(m.id)}
-                    className={`text-left px-3.5 py-2.5 rounded-xl border transition-all duration-150 text-xs cursor-pointer ${
-                      modelType === m.id
-                        ? "border-accent bg-accent-soft text-ink font-bold shadow-sm"
-                        : "border-line bg-surface text-muted hover:border-ink/20 hover:text-ink"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{m.icon}</span>
-                      <div>{m.label}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Explanation mode */}
-            <div>
-              <h4 className="font-bold text-2xs text-muted uppercase tracking-wider mb-2">
-                Voice & Style
-              </h4>
-              <div className="flex flex-col gap-1.5">
-                {MODES.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => onModeChange(m.id)}
-                    className={`text-left px-3.5 py-2.5 rounded-xl border transition-all duration-150 text-xs cursor-pointer ${
-                      mode === m.id
-                        ? "border-accent bg-accent-soft text-ink font-bold shadow-sm"
-                        : "border-line bg-surface text-muted hover:border-ink/20 hover:text-ink"
-                    }`}
-                  >
-                    <div>{m.label}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </details>
-
-        <div className={`px-6 py-3 border-t border-line bg-bg/20 ${isCollapsed ? "md:px-3" : ""}`}>
+        <div
+          className={`px-6 py-3 border-t border-line bg-bg/20 ${isCollapsed ? "md:px-3" : ""}`}
+        >
           <button
-            onClick={() => { onLogout?.(); if (onSidebarClose) onSidebarClose(); }}
+            onClick={() => {
+              onLogout?.();
+              if (onSidebarClose) onSidebarClose();
+            }}
             className="sidebar-logout w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-bold text-muted transition-all hover:border-accent/40 hover:bg-accent-soft/40 hover:text-ink cursor-pointer"
           >
             Sign out

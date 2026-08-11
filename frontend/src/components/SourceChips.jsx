@@ -6,21 +6,36 @@ export default function SourceChips({ sources }) {
       <summary className="cursor-pointer rounded-md text-xs font-mono font-bold uppercase tracking-wide text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 transition-colors list-none flex items-center gap-1.5">
         <span className="inline-block w-2 h-2 rounded-full bg-forest" />
         Trusted sources ({sources.length})
-        <span className="group-open:rotate-180 transition-transform text-xs">▾</span>
+        <span className="group-open:rotate-180 transition-transform text-xs">
+          ▾
+        </span>
       </summary>
       <div className="mt-2 flex flex-col gap-1.5 border-l-2 border-forest/20 pl-2">
         {sources.map((s, i) => {
           const content = (
             <>
-              <span className="font-mono text-muted shrink-0 text-sm">{s.year}</span>
+              <span className="font-mono text-muted shrink-0 text-sm">
+                {s.year}
+              </span>
               <span className="text-ink/80 text-left flex-1 hover:underline transition-all text-sm font-medium">
-                {s.publisher && <span className="block text-xs text-muted mb-0.5">{s.publisher}</span>}
+                {s.publisher && (
+                  <span className="block text-xs text-muted mb-0.5">
+                    {s.publisher}
+                  </span>
+                )}
                 {s.title}
               </span>
               <span className="ml-auto shrink-0 font-mono text-xs uppercase text-forest-deep bg-forest/10 px-1.5 py-0.5 rounded">
                 {s.source_type}
               </span>
-              {s.url && <span className="text-accent text-xs shrink-0" aria-label="Open source">↗</span>}
+              {s.url && (
+                <span
+                  className="text-accent text-xs shrink-0"
+                  aria-label="Open source"
+                >
+                  ↗
+                </span>
+              )}
             </>
           );
 

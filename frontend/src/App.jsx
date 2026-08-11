@@ -2,7 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatMessage from "./components/ChatMessage";
 import PulseLoader from "./components/PulseLoader";
-import { deleteConversation, deleteDocument, fetchConversations, fetchDocuments, fetchStats, saveConversation, streamChat, uploadDocument } from "./api";
+import {
+  deleteConversation,
+  deleteDocument,
+  fetchConversations,
+  fetchDocuments,
+  fetchStats,
+  saveConversation,
+  streamChat,
+  uploadDocument,
+} from "./api";
 import { useAuth } from "./auth/AuthContext";
 
 const SUGGESTIONS = [
@@ -62,8 +71,14 @@ export default function App() {
   );
 
   const createNewSession = () => ({
-    id: "session_" + Date.now(), title: "New Chat", messages: [], mode: "coach",
-    modelType: "rag", searchWeb: true, documentIds: [], timestamp: Date.now(),
+    id: "session_" + Date.now(),
+    title: "New Chat",
+    messages: [],
+    mode: "coach",
+    modelType: "rag",
+    searchWeb: true,
+    documentIds: [],
+    timestamp: Date.now(),
   });
 
   // Load history from the server after authentication. The API scopes it to this user.
@@ -86,11 +101,15 @@ export default function App() {
         setActiveChatId(newSession.id);
         setHistoryLoaded(true);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   useEffect(() => {
-    fetchDocuments().then(setDocuments).catch(() => setDocumentError("Your documents could not be loaded."));
+    fetchDocuments()
+      .then(setDocuments)
+      .catch(() => setDocumentError("Your documents could not be loaded."));
   }, [user?.id]);
 
   // Sync activeChatId fallback if not found in sessions
@@ -106,7 +125,10 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem("pulsefit_sidebar_collapsed", String(sidebarCollapsed));
+    localStorage.setItem(
+      "pulsefit_sidebar_collapsed",
+      String(sidebarCollapsed),
+    );
   }, [sidebarCollapsed]);
 
   useEffect(() => {
@@ -119,8 +141,9 @@ export default function App() {
     if (!historyLoaded) return;
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      Promise.all(sessions.map((session) => saveConversation(session)))
-        .catch((error) => console.error("Unable to save conversation history", error));
+      Promise.all(sessions.map((session) => saveConversation(session))).catch(
+        (error) => console.error("Unable to save conversation history", error),
+      );
     }, 500);
     return () => clearTimeout(saveTimerRef.current);
   }, [sessions, historyLoaded]);
@@ -171,12 +194,18 @@ export default function App() {
   };
 
   const toggleDocument = (id) => {
-    setSessions((prev) => prev.map((session) => session.id === activeChatId ? {
-      ...session,
-      documentIds: (session.documentIds || []).includes(id)
-        ? session.documentIds.filter((documentId) => documentId !== id)
-        : [...(session.documentIds || []), id],
-    } : session));
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === activeChatId
+          ? {
+              ...session,
+              documentIds: (session.documentIds || []).includes(id)
+                ? session.documentIds.filter((documentId) => documentId !== id)
+                : [...(session.documentIds || []), id],
+            }
+          : session,
+      ),
+    );
   };
 
   const handleUploadDocument = async (file) => {
@@ -186,9 +215,16 @@ export default function App() {
     try {
       const uploaded = await uploadDocument(file);
       setDocuments((prev) => [uploaded, ...prev]);
-      setSessions((prev) => prev.map((session) => session.id === activeChatId ? {
-        ...session, documentIds: [...(session.documentIds || []), uploaded.id],
-      } : session));
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === activeChatId
+            ? {
+                ...session,
+                documentIds: [...(session.documentIds || []), uploaded.id],
+              }
+            : session,
+        ),
+      );
       setDocumentNotice(`${uploaded.filename} is ready to use in this chat.`);
     } catch (error) {
       setDocumentError(error.message);
@@ -203,9 +239,14 @@ export default function App() {
     try {
       await deleteDocument(id);
       setDocuments((prev) => prev.filter((document) => document.id !== id));
-      setSessions((prev) => prev.map((session) => ({
-        ...session, documentIds: (session.documentIds || []).filter((documentId) => documentId !== id),
-      })));
+      setSessions((prev) =>
+        prev.map((session) => ({
+          ...session,
+          documentIds: (session.documentIds || []).filter(
+            (documentId) => documentId !== id,
+          ),
+        })),
+      );
       setDocumentNotice("Document removed.");
     } catch (error) {
       setDocumentError(error.message);
@@ -220,7 +261,9 @@ export default function App() {
 
   const handleDeleteSession = (id) => {
     const remaining = sessions.filter((s) => s.id !== id);
-    deleteConversation(id).catch((error) => console.error("Unable to delete conversation", error));
+    deleteConversation(id).catch((error) =>
+      console.error("Unable to delete conversation", error),
+    );
     if (remaining.length === 0) {
       const defaultSession = createNewSession();
       setSessions([defaultSession]);
@@ -234,12 +277,14 @@ export default function App() {
   };
 
   const handleClearChat = () => {
-    if (confirm("Are you sure you want to clear all messages in this conversation?")) {
+    if (
+      confirm(
+        "Are you sure you want to clear all messages in this conversation?",
+      )
+    ) {
       setSessions((prev) =>
         prev.map((s) =>
-          s.id === activeChatId
-            ? { ...s, title: "New Chat", messages: [] }
-            : s,
+          s.id === activeChatId ? { ...s, title: "New Chat", messages: [] } : s,
         ),
       );
     }
@@ -468,7 +513,9 @@ export default function App() {
                   Welcome to PulseFit Coach
                 </h2>
                 <p className="text-muted text-sm mt-2 max-w-md mx-auto font-medium leading-relaxed">
-                  Get practical training and nutrition guidance, grounded in research or the live web. Choose a prompt below or ask your own question.
+                  Get practical training and nutrition guidance, grounded in
+                  research or the live web. Choose a prompt below or ask your
+                  own question.
                 </p>
 
                 {/* Suggestions Grid */}

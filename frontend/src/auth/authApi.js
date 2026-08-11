@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_AUTH_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE =
+  import.meta.env.VITE_AUTH_API_BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8000";
 const SESSION_KEY = "pulsefit_auth_session";
 
 export function getStoredSession() {
@@ -32,15 +35,21 @@ async function request(path, options = {}) {
       ...options,
     });
   } catch {
-    throw new Error("We couldn't reach the authentication service. Please try again shortly.");
+    throw new Error(
+      "We couldn't reach the authentication service. Please try again shortly.",
+    );
   }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("Authentication isn't connected yet. Add an auth service at /api/auth to enable sign-in.");
+      throw new Error(
+        "Authentication isn't connected yet. Add an auth service at /api/auth to enable sign-in.",
+      );
     }
-    throw new Error(data.detail || data.message || "Something went wrong. Please try again.");
+    throw new Error(
+      data.detail || data.message || "Something went wrong. Please try again.",
+    );
   }
   return data;
 }
@@ -70,7 +79,12 @@ export async function requestPasswordReset(email) {
 
 export async function signOut() {
   try {
-    await request("/api/auth/logout", { method: "POST", headers: getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {} });
+    await request("/api/auth/logout", {
+      method: "POST",
+      headers: getAccessToken()
+        ? { Authorization: `Bearer ${getAccessToken()}` }
+        : {},
+    });
   } finally {
     localStorage.removeItem(SESSION_KEY);
   }
