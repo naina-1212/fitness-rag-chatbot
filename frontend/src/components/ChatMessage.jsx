@@ -6,11 +6,11 @@ export default function ChatMessage({ role, content, sources, streaming }) {
 
   return (
     <div
-      className={`flex gap-3.5 mb-5 items-start ${isUser ? "flex-row-reverse" : "flex-row"} animate-slide-up`}
+      className={`flex gap-2.5 sm:gap-3.5 mb-5 items-start ${isUser ? "flex-row-reverse" : "flex-row"} animate-slide-up`}
     >
       {/* Avatar Indicator */}
       <div
-        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold shadow-sm select-none border ${
+        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shrink-0 text-xs sm:text-sm font-bold shadow-sm select-none border ${
           isUser
             ? "bg-accent border-accent text-white"
             : "bg-surface border-line text-accent font-display"
@@ -20,10 +20,10 @@ export default function ChatMessage({ role, content, sources, streaming }) {
       </div>
 
       <div
-        className={`max-w-[80%] flex flex-col ${isUser ? "items-end" : "items-start"}`}
+        className={`max-w-[88%] sm:max-w-[80%] flex flex-col ${isUser ? "items-end" : "items-start"}`}
       >
         <div
-          className={`px-5 py-3.5 shadow-sm transition-all duration-200 ${
+          className={`px-4 sm:px-5 py-3.5 shadow-sm transition-all duration-200 ${
             isUser
               ? "bg-ink text-bg rounded-2xl rounded-tr-none"
               : "bg-surface border border-line rounded-2xl rounded-tl-none prose-fitness text-ink"

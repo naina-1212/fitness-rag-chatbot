@@ -43,6 +43,8 @@ export default function App() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [documentError, setDocumentError] = useState("");
+  const [documentNotice, setDocumentNotice] = useState("");
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const saveTimerRef = useRef(null);
 
   const [input, setInput] = useState("");
@@ -179,24 +181,32 @@ export default function App() {
 
   const handleUploadDocument = async (file) => {
     setDocumentError("");
+    setDocumentNotice("");
+    setIsUploadingDocument(true);
     try {
       const uploaded = await uploadDocument(file);
       setDocuments((prev) => [uploaded, ...prev]);
       setSessions((prev) => prev.map((session) => session.id === activeChatId ? {
         ...session, documentIds: [...(session.documentIds || []), uploaded.id],
       } : session));
+      setDocumentNotice(`${uploaded.filename} is ready to use in this chat.`);
     } catch (error) {
       setDocumentError(error.message);
+    } finally {
+      setIsUploadingDocument(false);
     }
   };
 
   const handleDeleteDocument = async (id) => {
+    setDocumentError("");
+    setDocumentNotice("");
     try {
       await deleteDocument(id);
       setDocuments((prev) => prev.filter((document) => document.id !== id));
       setSessions((prev) => prev.map((session) => ({
         ...session, documentIds: (session.documentIds || []).filter((documentId) => documentId !== id),
       })));
+      setDocumentNotice("Document removed.");
     } catch (error) {
       setDocumentError(error.message);
     }
@@ -408,11 +418,13 @@ export default function App() {
         onDeleteDocument={handleDeleteDocument}
         onToggleDocument={toggleDocument}
         documentError={documentError}
+        documentNotice={documentNotice}
+        isUploadingDocument={isUploadingDocument}
       />
 
       <main className="flex-1 flex flex-col min-w-0 relative h-full z-10">
         {/* Header */}
-        <header className="glass-panel border-b border-line px-6 py-4 flex items-center justify-between shadow-xs">
+        <header className="glass-panel border-b border-line px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
             {/* Hamburger sidebar toggle */}
             <button
@@ -444,20 +456,19 @@ export default function App() {
         {/* Scrollable messages container */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-6 pt-6 pb-36 scrollbar-thin"
+          className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-40 scrollbar-thin"
         >
           <div className="max-w-3xl mx-auto flex flex-col">
             {messages.length === 0 ? (
-              <div className="py-12 md:py-20 text-center animate-slide-up">
+              <div className="py-10 md:py-20 text-center animate-slide-up">
                 <span className="text-5xl animate-bounce inline-block mb-3">
                   ⚡
                 </span>
                 <h2 className="text-2xl font-extrabold text-ink tracking-tight font-display">
                   Welcome to PulseFit Coach
                 </h2>
-                <p className="text-muted text-sm mt-2 max-w-md mx-auto font-medium">
-                  A personal AI assistant for fitness, sports science, and
-                  everyday conversation. Ask anything!
+                <p className="text-muted text-sm mt-2 max-w-md mx-auto font-medium leading-relaxed">
+                  Get practical training and nutrition guidance, grounded in research or the live web. Choose a prompt below or ask your own question.
                 </p>
 
                 {/* Suggestions Grid */}
@@ -506,22 +517,22 @@ export default function App() {
         </div>
 
         {/* Floating Chat Input bar */}
-        <div className="absolute bottom-6 left-0 right-0 px-6 pointer-events-none z-25">
+        <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 px-4 sm:px-6 pointer-events-none z-25">
           <div className="max-w-3xl mx-auto pointer-events-auto">
             <form
-              className="flex items-center gap-2 bg-surface/92 backdrop-blur-lg border border-line rounded-2xl p-2.5 shadow-lg focus-within:ring-2 focus-within:ring-accent/25 focus-within:border-accent transition-all duration-200"
+              className="flex items-center gap-1.5 sm:gap-2 bg-surface/92 backdrop-blur-lg border border-line rounded-2xl p-2 sm:p-2.5 shadow-lg focus-within:ring-2 focus-within:ring-accent/25 focus-within:border-accent transition-all duration-200"
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
             >
               {/* Dynamic Engine/Search Toggle Indicator */}
-              <div className="pl-1.5 shrink-0">
+              <div className="pl-0.5 sm:pl-1.5 shrink-0">
                 {modelType === "agent" ? (
                   <button
                     type="button"
                     onClick={() => setSearchWeb(!searchWeb)}
-                    className={`flex items-center gap-1.5 px-3 py-1.8 rounded-xl border text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
+                    className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.8 rounded-xl border text-xs font-bold transition-all duration-150 cursor-pointer select-none ${
                       searchWeb
                         ? "border-forest bg-forest/10 text-forest shadow-xs"
                         : "border-line bg-bg text-muted hover:text-ink"
@@ -538,7 +549,7 @@ export default function App() {
                     🌐 Search Web
                   </button>
                 ) : (
-                  <div className="flex items-center gap-1.5 px-3 py-1.8 rounded-xl border border-line bg-bg text-muted text-xs font-bold select-none">
+                  <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.8 rounded-xl border border-line bg-bg text-muted text-xs font-bold select-none">
                     <span className="w-2 h-2 rounded-full bg-accent" />
                     📚 Study RAG
                   </div>
@@ -555,7 +566,7 @@ export default function App() {
                       ? "Search the live web for up-to-date wellness advice..."
                       : "Chat with PulseFit (ChatGPT-style direct answer)..."
                 }
-                className="flex-1 border-0 px-2 py-2.5 text-base bg-transparent focus:outline-none placeholder:text-muted/60 text-ink"
+                className="flex-1 min-w-0 border-0 px-1 sm:px-2 py-2.5 text-sm sm:text-base bg-transparent focus:outline-none placeholder:text-muted/60 text-ink"
                 disabled={isStreaming}
               />
 

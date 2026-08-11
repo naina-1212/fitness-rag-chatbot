@@ -45,6 +45,8 @@ export default function Sidebar({
   onDeleteDocument,
   onToggleDocument,
   documentError,
+  documentNotice,
+  isUploadingDocument = false,
 }) {
   return (
     <>
@@ -160,17 +162,18 @@ export default function Sidebar({
               <p className="text-[10px] text-muted mt-0.5">Private to your account</p>
             </div>
           </div>
-          <label className="group mb-3 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-accent/35 bg-accent-soft/55 px-3.5 py-3 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-accent hover:bg-accent hover:shadow-md focus-within:ring-2 focus-within:ring-accent/35 focus-within:ring-offset-2 focus-within:ring-offset-surface">
+          <label className={`group mb-3 flex w-full items-center gap-3 rounded-xl border border-accent/35 bg-accent-soft/55 px-3.5 py-3 text-left shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-accent/35 focus-within:ring-offset-2 focus-within:ring-offset-surface ${isUploadingDocument ? "cursor-wait opacity-75" : "cursor-pointer hover:-translate-y-0.5 hover:border-accent hover:bg-accent hover:shadow-md"}`}>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-lg text-white shadow-sm transition-transform duration-200 group-hover:scale-105" aria-hidden="true">↑</span>
             <span className="min-w-0 flex-1">
-              <span className="block text-xs font-extrabold text-ink transition-colors group-hover:text-white">Upload a document</span>
-              <span className="mt-0.5 block text-[10px] font-medium text-muted transition-colors group-hover:text-white/85">PDF, DOCX, TXT, MD, or CSV · up to 10 MB</span>
+              <span className="block text-xs font-extrabold text-ink transition-colors group-hover:text-white">{isUploadingDocument ? "Uploading document…" : "Upload a document"}</span>
+              <span className="mt-0.5 block text-[10px] font-medium text-muted transition-colors group-hover:text-white/85">{isUploadingDocument ? "Preparing it for this chat" : "PDF, DOCX, TXT, MD, or CSV · up to 10 MB"}</span>
             </span>
-            <span className="text-xs font-bold text-accent transition-colors group-hover:text-white" aria-hidden="true">Browse</span>
+            <span className="text-xs font-bold text-accent transition-colors group-hover:text-white" aria-hidden="true">{isUploadingDocument ? "Please wait" : "Browse"}</span>
             <input
               type="file"
               accept=".pdf,.docx,.txt,.md,.csv"
               className="sr-only"
+              disabled={isUploadingDocument}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) onUploadDocument?.(file);
@@ -179,12 +182,14 @@ export default function Sidebar({
             />
           </label>
           {documentError && <p role="alert" className="text-xs text-rose-500 mb-2">{documentError}</p>}
+          {documentNotice && <p role="status" className="mb-2 flex items-center gap-1.5 rounded-lg bg-forest/10 px-2.5 py-2 text-xs font-semibold text-forest-deep"><span aria-hidden="true">✓</span>{documentNotice}</p>}
           <div className="max-h-28 overflow-y-auto pr-1 scrollbar-thin flex flex-col gap-1">
             {documents.length === 0 ? (
               <p className="rounded-lg border border-dashed border-line bg-bg/40 px-3 py-2 text-xs leading-relaxed text-muted/75">Uploaded documents can be selected to ground this chat in your own material.</p>
             ) : documents.map((document) => {
               const selected = activeDocumentIds.includes(document.id);
-              return <div key={document.id} className={`group flex items-center gap-2 rounded-lg px-2 py-1.5 border ${selected ? "bg-accent-soft/40 border-accent/40" : "border-transparent hover:bg-bg"}`}>
+              const extension = document.filename?.split(".").pop()?.toUpperCase() || "DOC";
+              return <div key={document.id} className={`group flex items-center gap-2 rounded-xl px-2.5 py-2 border transition-colors ${selected ? "bg-accent-soft/40 border-accent/40 shadow-xs" : "border-transparent hover:bg-bg"}`}>
                 <input
                   type="checkbox"
                   checked={selected}
@@ -192,6 +197,7 @@ export default function Sidebar({
                   aria-label={`Use ${document.filename} in this chat`}
                   className="accent-accent cursor-pointer"
                 />
+                <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-bg px-1 font-mono text-[8px] font-extrabold text-muted" aria-hidden="true">{extension}</span>
                 <span className="flex-1 min-w-0 truncate text-xs font-semibold text-ink" title={document.filename}>{document.filename}</span>
                 <button
                   type="button"
@@ -202,7 +208,7 @@ export default function Sidebar({
               </div>;
             })}
           </div>
-          {documents.length > 0 && <p className="text-[10px] text-muted mt-2">Select documents to use in this chat.</p>}
+          {documents.length > 0 && <p className="text-[10px] text-muted mt-2">{activeDocumentIds.length ? `${activeDocumentIds.length} document${activeDocumentIds.length === 1 ? "" : "s"} selected for this chat.` : "Select documents to use in this chat."}</p>}
         </section>
 
         {/* Chat History Section */}

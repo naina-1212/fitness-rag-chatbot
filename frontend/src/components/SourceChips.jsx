@@ -3,12 +3,12 @@ export default function SourceChips({ sources }) {
 
   return (
     <details className="mt-3 group text-left">
-      <summary className="cursor-pointer text-sm font-mono uppercase tracking-wide text-muted hover:text-ink transition-colors list-none flex items-center gap-1.5">
+      <summary className="cursor-pointer rounded-md text-xs font-mono font-bold uppercase tracking-wide text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 transition-colors list-none flex items-center gap-1.5">
         <span className="inline-block w-2 h-2 rounded-full bg-forest" />
         Trusted sources ({sources.length})
         <span className="group-open:rotate-180 transition-transform text-xs">▾</span>
       </summary>
-      <div className="mt-2 flex flex-col gap-1.5">
+      <div className="mt-2 flex flex-col gap-1.5 border-l-2 border-forest/20 pl-2">
         {sources.map((s, i) => {
           const content = (
             <>
@@ -31,7 +31,7 @@ export default function SourceChips({ sources }) {
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-baseline gap-2 text-sm px-3 py-2 rounded-lg bg-bg border border-line hover:border-accent/40 hover:bg-accent-soft/10 transition-colors no-underline"
+                className="flex items-baseline gap-2 text-sm px-3 py-2 rounded-lg bg-bg border border-line hover:border-accent/40 hover:bg-accent-soft/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 transition-colors no-underline"
               >
                 {content}
               </a>
