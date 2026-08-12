@@ -15,7 +15,6 @@ import requests
 from dotenv import load_dotenv
 
 from app.retrieval import retrieve
-
 load_dotenv()
 
 LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "groq")  # "groq" or "anthropic"
@@ -129,6 +128,7 @@ keep it general and nudge them toward a registered dietitian or clinician -- bri
 disclaimer paragraph.
 8. When private document excerpts are present, pull the specific detail the user asked for \
 directly from them, and say plainly if it's not in there.
+9. Don't end every reply with a question by default -- that's a habit, not a rule. Only ask one when you genuinely can't help further without an answer (e.g. you need a missing detail to build a plan, or the request is ambiguous). If the user is venting, making small talk, or just gave you an answer that lets you respond fully, respond fully and stop -- a plain acknowledgment or a piece of useful information is a complete reply on its own, with no question tacked on.
 """
 
 AGENT_MODE_INSTRUCTIONS = {
